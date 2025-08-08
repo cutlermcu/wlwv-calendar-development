@@ -1,0 +1,43 @@
+{
+  "name": "wlwv-calendar-cloudflare",
+  "version": "3.0.0",
+  "description": "WLWV Life Calendar - Cloudflare Workers Deployment",
+  "main": "src/index.js",
+  "scripts": {
+    "build": "mkdir -p dist && cp index.html dist/",
+    "dev": "npm run build && wrangler dev",
+    "dev:remote": "npm run build && wrangler dev --remote",
+    "preview": "npm run build && wrangler dev --remote --env dev",
+    "deploy:dev": "npm run build && wrangler deploy --env dev",
+    "deploy:staging": "npm run build && wrangler deploy --env staging",
+    "deploy:prod": "npm run build && wrangler deploy --env production",
+    "db:create:dev": "wrangler d1 create wlwv-calendar-dev",
+    "db:create:staging": "wrangler d1 create wlwv-calendar-staging",
+    "db:create:prod": "wrangler d1 create wlwv-calendar-prod",
+    "db:init:dev": "curl -X POST https://wlwv-calendar-dev.your-subdomain.workers.dev/api/init",
+    "db:init:staging": "curl -X POST https://wlwv-calendar-staging.your-subdomain.workers.dev/api/init",
+    "db:init:prod": "curl -X POST https://wlwv-calendar-prod.your-subdomain.workers.dev/api/init",
+    "logs:dev": "wrangler tail --env dev",
+    "logs:staging": "wrangler tail --env staging",
+    "logs:prod": "wrangler tail --env production",
+    "status": "wrangler deployments list",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "calendar",
+    "school",
+    "cloudflare",
+    "workers",
+    "wlwv",
+    "materials",
+    "events"
+  ],
+  "author": "WLWV District",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^4.28.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

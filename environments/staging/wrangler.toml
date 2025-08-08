@@ -1,0 +1,14 @@
+name = "wlwv-calendar-staging"
+main = "src/index.js"
+compatibility_date = "2025-08-08"
+
+[assets]
+directory = "./dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "wlwv-calendar-staging"
+database_id = "PUT_STAGING_DB_ID_HERE"
+
+[vars]
+NODE_ENV = "staging"

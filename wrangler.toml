@@ -1,0 +1,52 @@
+name = "wlwv-calendar"
+main = "./src/index.js"
+compatibility_date = "2025-08-08"
+
+# Assets configuration for serving frontend
+[assets]
+directory = "./dist"
+not_found_handling = "single-page-application"
+
+# Default environment variables (for local development)
+[vars]
+NODE_ENV = "development"
+
+# Default database for local development (wrangler dev)
+[[d1_databases]]
+binding = "DB"
+database_name = "wlwv-calendar-dev"
+database_id = "839ee5b1-7467-4e04-960a-b1ce5fd514ad"
+preview_database_id = "839ee5b1-7467-4e04-960a-b1ce5fd514ad"
+
+# Development environment (wrangler deploy --env dev)
+[env.dev]
+name = "wlwv-calendar-dev"
+[env.dev.vars]
+NODE_ENV = "development"
+
+[[env.dev.d1_databases]]
+binding = "DB"
+database_name = "wlwv-calendar-dev"
+database_id = "839ee5b1-7467-4e04-960a-b1ce5fd514ad"
+
+# Staging environment (wrangler deploy --env staging)
+[env.staging]
+name = "wlwv-calendar-staging"
+[env.staging.vars]
+NODE_ENV = "staging"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "wlwv-calendar-staging"
+database_id = "b310ffc4-0e5e-4cbd-9db3-cc6ae3c56ac8"
+
+# Production environment (wrangler deploy --env production)
+[env.production]
+name = "wlwv-calendar-prod"
+[env.production.vars]
+NODE_ENV = "production"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "wlwv-calendar-for-worker-bee"
+database_id = "7c57090d-4305-4844-8fcf-04a31572e1dc"

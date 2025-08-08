@@ -1,0 +1,14 @@
+name = "wlwv-calendar-dev"
+main = "src/index.js"
+compatibility_date = "2025-08-08"
+
+[assets]
+directory = "./dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "wlwv-calendar-dev"
+database_id = "839ee5b1-7467-4e04-960a-b1ce5fd514ad"
+
+[vars]
+NODE_ENV = "development"
