@@ -197,6 +197,14 @@
             font-weight: bold;
         }
 
+        .school-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* This crops the image to fill the circle */
+            border-radius: 50%; /* Makes the image itself circular */
+            filter: none; /* Remove the invert filter since we want original colors */
+        }
+
         .school-card h2 {
             font-size: 1.8rem;
             margin-bottom: 15px;
@@ -1271,10 +1279,8 @@
                 <div class="schools-grid">
                     <div class="school-card" onclick="goToSchool('wlhs')">
                         <div class="school-logo">
-                            <img src="https://images.squarespace-cdn.com/content/v1/5e7cf2f69103761c58d7c0e2/1585239575053-L6XK6Q1YQHYF8T2VXL3R/west+linn+lion+head.png" 
-                                 alt="West Linn Lions Logo" 
-                                 style="width: 90px; height: 90px; object-fit: contain; filter: brightness(0) invert(1);"
-                                 onerror="this.style.display='none'; this.parentNode.innerHTML='🦁';">
+                            <img src="https://pbs.twimg.com/profile_images/1894895031833726976/9f9O-2DF_400x400.jpg" 
+                                 alt="West Linn Lions Logo">
                         </div>
                         <h2>West Linn High School</h2>
                         <p>Home of the Lions</p>
@@ -1297,34 +1303,13 @@
 
                     <div class="school-card" onclick="goToSchool('wvhs')">
                         <div class="school-logo">
-                            <img src="https://res.cloudinary.com/hudl/image/upload/c_fill,f_auto,h_100,q_auto,w_100/v1/org_logos/424075" 
+                            <img src="https://pbs.twimg.com/profile_images/503986501445636096/rPKUymzb_400x400.jpeg" 
                                  alt="Wilsonville Wildcats Logo" 
-                                 style="width: 90px; height: 90px; object-fit: contain; filter: brightness(0) invert(1);"
+                                 style="width: 90px; height: 90px; object-fit: contain;"
                                  onerror="this.style.display='none'; this.parentNode.innerHTML='🐱';">
                         </div>
                         <h2>Wilsonville High School</h2>
                         <p>Home of the Wildcats</p>
-                        <p>Access WHS calendar, events, and curriculum materials</p>
-                        <div class="school-stats">
-                            <div class="stat">
-                                <div class="stat-number" id="wvhs-events-count">-</div>
-                                <div class="stat-label">Today's Events</div>
-                            </div>
-                            <div class="stat">
-                                <div class="stat-number" id="wvhs-schedule">-</div>
-                                <div class="stat-label">Today's Schedule</div>
-                            </div>
-                            <div class="stat">
-                                <div class="stat-number" id="wvhs-day-type">-</div>
-                                <div class="stat-label">Day Type</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                    <div class="school-card" onclick="goToSchool('wvhs')">
-                        <div class="school-logo">🐱</div>
-                        <h2>Wilsonville High School</h2>
                         <p>Access WHS calendar, events, and curriculum materials</p>
                         <div class="school-stats">
                             <div class="stat">
@@ -2426,14 +2411,14 @@ function setApiUrl() {
             const schoolSelect = document.getElementById('schoolSelect');
             
             if (schoolCode === 'wlhs') {
-                if (schoolIcon) schoolIcon.innerHTML = '<img src="https://images.squarespace-cdn.com/content/v1/5e7cf2f69103761c58d7c0e2/1585239575053-L6XK6Q1YQHYF8T2VXL3R/west+linn+lion+head.png" style="width: 30px; height: 30px; filter: brightness(0) invert(1);" onerror="this.innerHTML=\'🦁\'">';
-                if (schoolName) schoolName.textContent = 'West Linn High School';
-                if (schoolSelect) schoolSelect.value = 'wlhs';
-            } else {
-                if (schoolIcon) schoolIcon.innerHTML = '<img src="https://res.cloudinary.com/hudl/image/upload/c_fill,f_auto,h_100,q_auto,w_100/v1/org_logos/424075" style="width: 30px; height: 30px; filter: brightness(0) invert(1);" onerror="this.innerHTML=\'🐱\'">';
-                if (schoolName) schoolName.textContent = 'Wilsonville High School';
-                if (schoolSelect) schoolSelect.value = 'wvhs';
-            }
+            if (schoolIcon) schoolIcon.innerHTML = '<img src="https://pbs.twimg.com/profile_images/1894895031833726976/9f9O-2DF_400x400.jpg" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;" onerror="this.innerHTML=\'🦁\'">';
+            if (schoolName) schoolName.textContent = 'West Linn High School';
+            if (schoolSelect) schoolSelect.value = 'wlhs';
+        } else {
+            if (schoolIcon) schoolIcon.innerHTML = '<img src="https://pbs.twimg.com/profile_images/503986501445636096/rPKUymzb_400x400.jpeg" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;" onerror="this.innerHTML=\'🐱\'">';
+            if (schoolName) schoolName.textContent = 'Wilsonville High School';
+            if (schoolSelect) schoolSelect.value = 'wvhs';
+    }
             
             showNotification(`Switched to ${schoolCode === 'wlhs' ? 'West Linn HS' : 'Wilsonville HS'}`);
             showScreen('calendar');
