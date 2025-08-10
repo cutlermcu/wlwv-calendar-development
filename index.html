@@ -1258,12 +1258,12 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎓 WLWV Life Calendar</h1>
+            <h1> WLWV Life Calendar</h1>
         </div>
 
         <div class="tabs">
             <button class="tab active" onclick="showScreen('home')">🏠 Home</button>
-            <button class="tab" onclick="showScreen('setup')">🔧 Setup</button>
+
             <button class="tab" onclick="showScreen('calendar')">📅 Calendar</button>
             <button class="tab" onclick="showScreen('admin')">⚙️ Admin</button>
         </div>
@@ -1283,7 +1283,6 @@
                                  alt="West Linn Lions Logo">
                         </div>
                         <h2>West Linn High School</h2>
-                        <p>Home of the Lions</p>
                         <p>Access WLHS calendar, events, and curriculum materials</p>
                         <div class="school-stats">
                             <div class="stat">
@@ -1309,7 +1308,6 @@
                                  onerror="this.style.display='none'; this.parentNode.innerHTML='🐱';">
                         </div>
                         <h2>Wilsonville High School</h2>
-                        <p>Home of the Wildcats</p>
                         <p>Access WHS calendar, events, and curriculum materials</p>
                         <div class="school-stats">
                             <div class="stat">
@@ -1329,8 +1327,6 @@
                 </div>
 
                 <div class="admin-access" id="adminAccess">
-                    <button class="btn btn-secondary" onclick="showScreen('setup')">
-                        🔧 Database Setup
                     </button>
                     <button class="btn btn-secondary" onclick="showScreen('admin')">
                         ⚙️ Admin Panel
@@ -1339,36 +1335,6 @@
             </div>
         </div>
 
-        <!-- Setup Screen -->
-        <div class="screen" id="setup">
-            <div class="setup-screen">
-                <h2>Cloudflare D1 Setup</h2>
-                <p style="margin-bottom: 30px;">Configure your Cloudflare D1 database connection</p>
-
-                <div id="connectionStatus" class="connection-status disconnected">
-                    <span>🔴</span>
-                    <span>Checking connection...</span>
-                </div>
-
-                <form class="setup-form" onsubmit="handleSetup(event)">
-                    <div class="form-group">
-                        <label class="form-label" for="apiUrl">Cloudflare Workers API URL</label>
-                        <input type="text" class="form-input" id="apiUrl" 
-                               value="" required>
-                        <small style="color: #6b7280; font-size: 0.8rem;">Your Cloudflare Workers deployment URL</small>
-                    </div>
-
-                    <div style="display: flex; gap: 10px; justify-content: center;">
-                        <button type="submit" class="btn btn-primary">
-                            Test D1 Connection
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="testConnection()">
-                            Verify Setup
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
 
         <!-- Calendar Screen -->
         <div class="screen" id="calendar">
@@ -1407,8 +1373,6 @@
                 <p>Cloudflare D1 database administration and event management</p>
 
                 <div style="margin-top: 30px;">
-                    <button class="btn btn-primary" onclick="initializeDatabase()">
-                        Initialize D1 Database
                     </button>
                     <button class="btn btn-secondary" onclick="testConnection()" style="margin-left: 10px;">
                         Test Connection
@@ -2751,8 +2715,8 @@ async function updateEvent(e, eventId, eventDate) {
                 // Show defaults for both schools
                 for (const school of ['wlhs', 'wvhs']) {
                     document.getElementById(`${school}-events-count`).textContent = '0';
-                    document.getElementById(`${school}-schedule`).textContent = 'N/A';
-                    document.getElementById(`${school}-day-type`).textContent = 'N/A';
+                    document.getElementById(`${school}-schedule`).textContent = 'Regular';
+                    document.getElementById(`${school}-day-type`).textContent = 'Regular Day';
                 }
             }
         }
