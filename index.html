@@ -2078,33 +2078,30 @@ function setApiUrl() {
                 html += `<div id="admin-grade-${grade}-materials" style="display: ${display};">`;
                 
                 // Existing materials
-                if (gradeMaterials.length > 0) {
-                    html += '<div class="existing-items" style="margin-bottom: 20px;">';
-                    gradeMaterials.forEach(material => {
+                        if (gradeMaterials.length > 0) {
+            html += '<div class="existing-items" style="margin-bottom: 20px;">';
+            gradeMaterials.forEach(material => {
+                html += '<div class="admin-item-card">';
+                html += '<div class="admin-item-info">';
+                html += '<div class="admin-item-title">' + material.title + '</div>';
+                html += '<div class="admin-item-details">';
+                html += '<a href="' + material.link + '" target="_blank" style="color: #3b82f6;">' + material.link + '</a>';
+                if (material.password) html += ' • 🔒 Password Protected';
+                if (material.description) html += ' • ' + material.description;
+                html += '</div></div>';
+                html += '<div class="admin-item-actions">';
+                html += '<button class="btn btn-sm btn-edit" onclick="editMaterial(' + material.id + ')">Edit</button>';
+                html += '<button class="btn btn-sm btn-delete" onclick="deleteMaterial(' + material.id + ')">Delete</button>';
+                html += '</div></div>';
+            });
+            html += '</div>';
+                    } else {
                         html += `
-                            <div class="admin-item-card">
-                                <div class="admin-item-info">
-                                    <div class="admin-item-title">${material.title}</div>
-                                    <div class="admin-item-details">
-                                        <a href="${material.link}" target="_blank" style="color: #3b82f6;">${material.link}</a>
-                                        ${material.password ? ' • 🔒 Password Protected' : ''}
-                                        ${material.description ? ' • ' + material.description : ''}
-                                    </div>
-                                </div>
-                                <div class="admin-item-actions">
-                                    <button class="btn btn-sm btn-delete" onclick="deleteMaterial(${material.id})">Delete</button>
-                                </div>
+                            <div style="text-align: center; color: #6b7280; padding: 20px;">
+                                No materials for Grade ${grade}
                             </div>
                         `;
-                    });
-                    html += '</div>';
-                } else {
-                    html += `
-                        <div style="text-align: center; color: #6b7280; padding: 20px;">
-                            No materials for Grade ${grade}
-                        </div>
-                    `;
-                }
+                    }
                 
                 // Add material form
                 html += `
@@ -3194,7 +3191,7 @@ function cancelEdit(button, originalContent) {
             }
         }
 
-        // STEP 4: Add the cancel function
+            // STEP 4: Add the cancel function
         function cancelMaterialEdit(button, originalContent) {
             const materialCard = button.closest('.admin-item-card');
             materialCard.innerHTML = originalContent;
