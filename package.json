@@ -21,7 +21,10 @@
     "logs:staging": "wrangler tail --env staging",
     "logs:prod": "wrangler tail --env production",
     "status": "wrangler deployments list",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "db:backup:prod": "wrangler d1 export wlwv-calendar-for-worker-bee --env production --remote --output=./backup.sql",
+    "db:sync:prod-to-staging": "wrangler d1 execute wlwv-calendar-staging --env staging --remote --file=./backup.sql",
+    "db:restore:staging": "wrangler d1 execute wlwv-calendar-staging --file=./backup.sql"
   },
   "keywords": [
     "calendar",

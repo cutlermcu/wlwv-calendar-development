@@ -2182,19 +2182,17 @@ function setApiUrl() {
                     </div>
                     <div class="section-content">
                         <div class="grade-tabs">
-                            <button class="grade-tab active" onclick="showAdminGrade(9, this)">Grade 9</button>
-                            <button class="grade-tab" onclick="showAdminGrade(10, this)">Grade 10</button>
-                            <button class="grade-tab" onclick="showAdminGrade(11, this)">Grade 11</button>
-                            <button class="grade-tab" onclick="showAdminGrade(12, this)">Grade 12</button>
+                            <button class="grade-tab active" onclick="showAdminGrade(9, this, '${dateStr}')">Grade 9</button>
+                            <button class="grade-tab" onclick="showAdminGrade(10, this, '${dateStr}')">Grade 10</button>
+                            <button class="grade-tab" onclick="showAdminGrade(11, this, '${dateStr}')">Grade 11</button>
+                            <button class="grade-tab" onclick="showAdminGrade(12, this, '${dateStr}')">Grade 12</button>
                         </div>
             `;
             
             // Materials by grade (simplified for space)
             content += `
-                        <div id="admin-materials-content">
-                            <p style="color: #6b7280; text-align: center; padding: 20px;">Material management functionality available</p>
-                        </div>
-                    </div>
+                <div id="admin-materials-content">
+                    ${generateMaterialsManagement(dateStr, materials)}
                 </div>
             `;
             
@@ -2295,9 +2293,79 @@ function setApiUrl() {
             }
         }
 
-        // Placeholder for edit functions
-        function editEvent(eventId) {
-            showNotification('Edit functionality coming soon!');
+        async function editEvent(eventId) {
+            try {
+                // Find the event in cache
+                const school = app.state.selectedSchool;
+                let eventToEdit = null;
+                let eventDate = null;
+
+                // Search through all dates to find the event
+            Object.keys(calendarCache.events[school] || {}).forEach(date => {
+                const event = calendarCache.events[school][date].find(e => e.id === eventId);
+                if (event) {
+                    eventToEdit = event;
+                    eventDate = date;
+                }
+        });
+        
+                if (!eventToEdit) {
+                    showNotification('Event not found', true);
+                    return;
+                }
+        
+                // Find the event card in the DOM
+                const editButton = document.querySelector(`[onclick="editEvent(${eventId})"]`);
+                const eventCard = editButton.closest('.admin-item-card');
+        
+                // Save original content in case user cancels
+                const originalContent = eventCard.innerHTML;
+        
+                // Create edit form
+                eventCard.innerHTML = `
+                    <form onsubmit="updateEvent(event, ${eventId}, '${eventDate}'); return false;" style="width: 100%;">
+                        <div class="form-row" style="margin-bottom: 15px;">
+                            <div class="form-group" style="flex: 2; margin-right: 10px;">
+                                <label class="form-label">Event Title</label>
+                                <input type="text" class="form-input" name="title" value="${eventToEdit.title}" required>
+                            </div>
+                            <div class="form-group" style="flex: 0 0 120px;">
+                                <label class="form-label">Time</label>
+                                <input type="time" class="form-input" name="time" value="${eventToEdit.time || ''}">
+                            </div>
+                        </div>
+                        <div class="form-row" style="margin-bottom: 15px;">
+                            <div class="form-group" style="flex: 0 0 160px; margin-right: 10px;">
+                                <label class="form-label">Department</label>
+                                <select class="form-input" name="department">
+                                    <option value="">None</option>
+                                    <option value="ASB" ${eventToEdit.department === 'ASB' ? 'selected' : ''}>ASB</option>
+                                    <option value="Life" ${eventToEdit.department === 'Life' ? 'selected' : ''}>Life</option>
+                                    <option value="Athletics" ${eventToEdit.department === 'Athletics' ? 'selected' : ''}>Athletics</option>
+                                    <option value="Art/Theater" ${eventToEdit.department === 'Art/Theater' ? 'selected' : ''}>Art/Theater</option>
+                                    <option value="Counseling" ${eventToEdit.department === 'Counseling' ? 'selected' : ''}>Counseling</option>
+                                    <option value="Testing" ${eventToEdit.department === 'Testing' ? 'selected' : ''}>Testing</option>
+                                    <option value="Staff" ${eventToEdit.department === 'Staff' ? 'selected' : ''}>Staff</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label">Description</label>
+                                <input type="text" class="form-input" name="description" value="${eventToEdit.description || ''}">
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; justify-content: center;">
+                            <button type="submit" class="btn btn-primary">Update Event</button>
+                            <button type="button" class="btn btn-secondary" onclick="cancelEdit(this, \`${originalContent.replace(/`/g, '\\`')}\`)">Cancel</button>
+                        </div>
+                    </form>
+                `;
+                
+                eventCard.style.padding = '20px';
+                
+            } catch (error) {
+                console.error('Edit event error:', error);
+                showNotification('Failed to edit event', true);
+            }
         }
 
         // Close modal
