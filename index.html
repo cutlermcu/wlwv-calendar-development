@@ -2191,10 +2191,10 @@ function setApiUrl() {
             
             // Materials by grade (simplified for space)
             content += `
-                <div id="admin-materials-content">
-                    ${generateMaterialsManagement(dateStr, materials)}
-                </div>
-            `;
+            <div id="admin-materials-content">
+                ${generateMaterialsManagement(dateStr, materials)}
+            </div>
+           `;
             
             modalBody.innerHTML = content;
             modal.classList.add('show');
@@ -2294,80 +2294,120 @@ function setApiUrl() {
         }
 
         async function editEvent(eventId) {
-            try {
-                // Find the event in cache
-                const school = app.state.selectedSchool;
-                let eventToEdit = null;
-                let eventDate = null;
-
-                // Search through all dates to find the event
-            Object.keys(calendarCache.events[school] || {}).forEach(date => {
-                const event = calendarCache.events[school][date].find(e => e.id === eventId);
-                if (event) {
-                    eventToEdit = event;
-                    eventDate = date;
-                }
+    try {
+        // Find the event in cache
+        const school = app.state.selectedSchool;
+        let eventToEdit = null;
+        let eventDate = null;
+        
+        // Search through all dates to find the event
+        Object.keys(calendarCache.events[school] || {}).forEach(date => {
+            const event = calendarCache.events[school][date].find(e => e.id === eventId);
+            if (event) {
+                eventToEdit = event;
+                eventDate = date;
+            }
         });
         
-                if (!eventToEdit) {
-                    showNotification('Event not found', true);
-                    return;
-                }
-        
-                // Find the event card in the DOM
-                const editButton = document.querySelector(`[onclick="editEvent(${eventId})"]`);
-                const eventCard = editButton.closest('.admin-item-card');
-        
-                // Save original content in case user cancels
-                const originalContent = eventCard.innerHTML;
-        
-                // Create edit form
-                eventCard.innerHTML = `
-                    <form onsubmit="updateEvent(event, ${eventId}, '${eventDate}'); return false;" style="width: 100%;">
-                        <div class="form-row" style="margin-bottom: 15px;">
-                            <div class="form-group" style="flex: 2; margin-right: 10px;">
-                                <label class="form-label">Event Title</label>
-                                <input type="text" class="form-input" name="title" value="${eventToEdit.title}" required>
-                            </div>
-                            <div class="form-group" style="flex: 0 0 120px;">
-                                <label class="form-label">Time</label>
-                                <input type="time" class="form-input" name="time" value="${eventToEdit.time || ''}">
-                            </div>
-                        </div>
-                        <div class="form-row" style="margin-bottom: 15px;">
-                            <div class="form-group" style="flex: 0 0 160px; margin-right: 10px;">
-                                <label class="form-label">Department</label>
-                                <select class="form-input" name="department">
-                                    <option value="">None</option>
-                                    <option value="ASB" ${eventToEdit.department === 'ASB' ? 'selected' : ''}>ASB</option>
-                                    <option value="Life" ${eventToEdit.department === 'Life' ? 'selected' : ''}>Life</option>
-                                    <option value="Athletics" ${eventToEdit.department === 'Athletics' ? 'selected' : ''}>Athletics</option>
-                                    <option value="Art/Theater" ${eventToEdit.department === 'Art/Theater' ? 'selected' : ''}>Art/Theater</option>
-                                    <option value="Counseling" ${eventToEdit.department === 'Counseling' ? 'selected' : ''}>Counseling</option>
-                                    <option value="Testing" ${eventToEdit.department === 'Testing' ? 'selected' : ''}>Testing</option>
-                                    <option value="Staff" ${eventToEdit.department === 'Staff' ? 'selected' : ''}>Staff</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label class="form-label">Description</label>
-                                <input type="text" class="form-input" name="description" value="${eventToEdit.description || ''}">
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 10px; justify-content: center;">
-                            <button type="submit" class="btn btn-primary">Update Event</button>
-                            <button type="button" class="btn btn-secondary" onclick="cancelEdit(this, \`${originalContent.replace(/`/g, '\\`')}\`)">Cancel</button>
-                        </div>
-                    </form>
-                `;
-                
-                eventCard.style.padding = '20px';
-                
-            } catch (error) {
-                console.error('Edit event error:', error);
-                showNotification('Failed to edit event', true);
-            }
+        if (!eventToEdit) {
+            showNotification('Event not found', true);
+            return;
         }
+        
+        // Find the event card in the DOM
+        const editButton = document.querySelector(`[onclick="editEvent(${eventId})"]`);
+        const eventCard = editButton.closest('.admin-item-card');
+        
+        // Save original content in case user cancels
+        const originalContent = eventCard.innerHTML;
+        
+        // Create edit form
+        eventCard.innerHTML = `
+            <form onsubmit="updateEvent(event, ${eventId}, '${eventDate}'); return false;" style="width: 100%;">
+                <div class="form-row" style="margin-bottom: 15px;">
+                    <div class="form-group" style="flex: 2; margin-right: 10px;">
+                        <label class="form-label">Event Title</label>
+                        <input type="text" class="form-input" name="title" value="${eventToEdit.title}" required>
+                    </div>
+                    <div class="form-group" style="flex: 0 0 120px;">
+                        <label class="form-label">Time</label>
+                        <input type="time" class="form-input" name="time" value="${eventToEdit.time || ''}">
+                    </div>
+                </div>
+                <div class="form-row" style="margin-bottom: 15px;">
+                    <div class="form-group" style="flex: 0 0 160px; margin-right: 10px;">
+                        <label class="form-label">Department</label>
+                        <select class="form-input" name="department">
+                            <option value="">None</option>
+                            <option value="ASB" ${eventToEdit.department === 'ASB' ? 'selected' : ''}>ASB</option>
+                            <option value="Life" ${eventToEdit.department === 'Life' ? 'selected' : ''}>Life</option>
+                            <option value="Athletics" ${eventToEdit.department === 'Athletics' ? 'selected' : ''}>Athletics</option>
+                            <option value="Art/Theater" ${eventToEdit.department === 'Art/Theater' ? 'selected' : ''}>Art/Theater</option>
+                            <option value="Counseling" ${eventToEdit.department === 'Counseling' ? 'selected' : ''}>Counseling</option>
+                            <option value="Testing" ${eventToEdit.department === 'Testing' ? 'selected' : ''}>Testing</option>
+                            <option value="Staff" ${eventToEdit.department === 'Staff' ? 'selected' : ''}>Staff</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-input" name="description" value="${eventToEdit.description || ''}">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button type="submit" class="btn btn-primary">Update Event</button>
+                    <button type="button" class="btn btn-secondary" onclick="cancelEdit(this, \`${originalContent.replace(/`/g, '\\`')}\`)">Cancel</button>
+                </div>
+            </form>
+        `;
+        
+        eventCard.style.padding = '20px';
+        
+    } catch (error) {
+        console.error('Edit event error:', error);
+        showNotification('Failed to edit event', true);
+    }
+}
+async function updateEvent(e, eventId, eventDate) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    
+    try {
+        const updatedEvent = await apiCall(`/events/${eventId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                title: formData.get('title'),
+                department: formData.get('department') || null,
+                time: formData.get('time') || null,
+                description: formData.get('description') || ''
+            })
+        });
+        
+        // Update cache
+        const school = app.state.selectedSchool;
+        const eventIndex = calendarCache.events[school][eventDate].findIndex(e => e.id === eventId);
+        if (eventIndex !== -1) {
+            calendarCache.events[school][eventDate][eventIndex] = updatedEvent;
+        }
+        
+        // Refresh modal and calendar
+        const modalDate = document.getElementById('modalDate').textContent;
+        openAdminModal(eventDate, modalDate);
+        renderCalendar();
+        showNotification('Event updated successfully!');
+    } catch (error) {
+        console.error('Update event error:', error);
+        showNotification('Failed to update event', true);
+    }
+}
 
+// STEP 2B: Add this helper function for the cancel button:
+
+function cancelEdit(button, originalContent) {
+    const eventCard = button.closest('.admin-item-card');
+    eventCard.innerHTML = originalContent;
+    eventCard.style.padding = '12px'; // Reset to original padding
+}
         // Close modal
         function closeModal() {
             const modal = document.getElementById('dayModal');
@@ -2762,6 +2802,163 @@ function setApiUrl() {
                     d.classList.remove('show');
                 });
             }
+            function generateMaterialsManagement(dateStr, allMaterials) {
+    let html = '';
+    
+    for (let grade = 9; grade <= 12; grade++) {
+        const gradeMaterials = allMaterials.filter(m => m.grade_level === grade);
+        const display = grade === 9 ? 'block' : 'none';
+        
+        html += `<div id="admin-grade-${grade}-materials" style="display: ${display};">`;
+        
+        // Existing materials
+        if (gradeMaterials.length > 0) {
+            html += '<div class="existing-items" style="margin-bottom: 20px;">';
+            gradeMaterials.forEach(material => {
+                html += `
+                    <div class="admin-item-card">
+                        <div class="admin-item-info">
+                            <div class="admin-item-title">${material.title}</div>
+                            <div class="admin-item-details">
+                                <a href="${material.link}" target="_blank" style="color: #3b82f6;">${material.link}</a>
+                                ${material.password ? ' • 🔒 Password Protected' : ''}
+                                ${material.description ? ' • ' + material.description : ''}
+                            </div>
+                        </div>
+                        <div class="admin-item-actions">
+                            <button class="btn btn-sm btn-delete" onclick="deleteMaterial(${material.id})">Delete</button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        } else {
+            html += `
+                <div style="text-align: center; color: #6b7280; padding: 20px;">
+                    No materials for Grade ${grade}
+                </div>
+            `;
+        }
+        
+        // Add material form
+        html += `
+            <div class="add-form" style="border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                <h4 style="margin-bottom: 15px; color: #374151;">Add New Material for Grade ${grade}</h4>
+                <form onsubmit="addMaterial(event, '${dateStr}', ${grade}); return false;">
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 2;">
+                            <label class="form-label">Material Title</label>
+                            <input type="text" class="form-input" name="title" placeholder="e.g., Biology Chapter 5 Notes" required>
+                        </div>
+                        <div class="form-group" style="flex: 2;">
+                            <label class="form-label">Link/URL</label>
+                            <input type="url" class="form-input" name="link" placeholder="https://..." required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 2;">
+                            <label class="form-label">Description (Optional)</label>
+                            <input type="text" class="form-input" name="description" placeholder="Brief description of the material">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label class="form-label">Password (Optional)</label>
+                            <input type="text" class="form-input" name="password" placeholder="Leave blank for public access">
+                        </div>
+                        <div class="form-group" style="flex: 0 0 120px; align-self: flex-end;">
+                            <button type="submit" class="btn btn-add" style="width: 100%;">Add Material</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        `;
+        
+        html += '</div>';
+    }
+    
+    return html;
+}
+        // Add Material Functionality
+        async function addMaterial(e, dateStr, grade) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            
+            try {
+                const newMaterial = await apiCall('/materials', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        school: app.state.selectedSchool,
+                        date: dateStr,
+                        grade_level: parseInt(grade),
+                        title: formData.get('title'),
+                        link: formData.get('link'),
+                        description: formData.get('description') || '',
+                        password: formData.get('password') || ''
+                    })
+                });
+                
+                // Update cache
+                if (!calendarCache.materials[app.state.selectedSchool]) {
+                    calendarCache.materials[app.state.selectedSchool] = {};
+                }
+                if (!calendarCache.materials[app.state.selectedSchool][dateStr]) {
+                    calendarCache.materials[app.state.selectedSchool][dateStr] = [];
+                }
+                calendarCache.materials[app.state.selectedSchool][dateStr].push(newMaterial);
+                
+                // Refresh modal
+                const modalDate = document.getElementById('modalDate').textContent;
+                openAdminModal(dateStr, modalDate);
+                showNotification('Material added successfully!');
+                
+            } catch (error) {
+                console.error('Add material error:', error);
+                showNotification('Failed to add material', true);
+            }
+        }
+
+        // Delete Material
+        async function deleteMaterial(materialId) {
+            if (!confirm('Are you sure you want to delete this material?')) return;
+            
+            try {
+                await apiCall(`/materials/${materialId}`, { method: 'DELETE' });
+                
+                // Update cache
+                const school = app.state.selectedSchool;
+                Object.keys(calendarCache.materials[school] || {}).forEach(date => {
+                    calendarCache.materials[school][date] = calendarCache.materials[school][date].filter(m => m.id !== materialId);
+                });
+                
+                // Refresh modal
+                const modalDate = document.getElementById('modalDate').textContent;
+                const dateStr = new Date(modalDate).toISOString().split('T')[0];
+                openAdminModal(dateStr, modalDate);
+                showNotification('Material deleted successfully!');
+                
+            } catch (error) {
+                console.error('Delete material error:', error);
+                showNotification('Failed to delete material', true);
+            }
+        }
+
+        // Update the showAdminGrade function to include dateStr parameter
+        function showAdminGrade(grade, button, dateStr) {
+            // Update active tab
+            document.querySelectorAll('.grade-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            button.classList.add('active');
+            
+            // Show/hide grade content
+            for (let g = 9; g <= 12; g++) {
+                const element = document.getElementById(`admin-grade-${g}-materials`);
+                if (element) {
+                    element.style.display = g === grade ? 'block' : 'none';
+                }
+            }
+        }
+
         });
     </script>
 </body>
