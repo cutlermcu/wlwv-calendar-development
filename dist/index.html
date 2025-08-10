@@ -2346,8 +2346,7 @@ function setApiUrl() {
             // Materials by grade (simplified for space)
             content += `
             <div id="admin-materials-content">
-                <${generateMaterialsManagement(dateStr, materials)}
-                <p style="color: #6b7280; text-align: center; padding: 20px;">Materials management loading...</p>
+                ${generateMaterialsManagement(dateStr, materials)}
             </div>
            `;
             
@@ -2981,7 +2980,8 @@ function cancelEdit(button, originalContent) {
                             </div>
                         </div>
                         <div class="admin-item-actions">
-                            <button class="btn btn-sm btn-delete" onclick="deleteMaterial(${material.id})">Delete</button>
+                            <button class="btn btn-sm btn-edit" onclick="editMaterial(' + material.id + ')">Edit</button>
+                            <button class="btn btn-sm btn-delete" onclick="deleteMaterial(' + material.id + ')">Delete</button>
                         </div>
                     </div>
                 `;
@@ -3071,7 +3071,71 @@ function cancelEdit(button, originalContent) {
                 showNotification('Failed to add material', true);
             }
         }
-
+        async function editMaterial(materialId) {
+              try {
+        // Find the material in cache
+        const school = app.state.selectedSchool;
+        let materialToEdit = null;
+        let materialDate = null;
+        
+        // Search through all dates to find the material
+        Object.keys(calendarCache.materials[school] || {}).forEach(date => {
+            const material = calendarCache.materials[school][date].find(m => m.id === materialId);
+            if (material) {
+                materialToEdit = material;
+                materialDate = date;
+            }
+        });
+        
+        if (!materialToEdit) {
+            showNotification('Material not found', true);
+            return;
+        }
+        
+        // Find the material card in the DOM
+        const editButton = document.querySelector(`[onclick="editMaterial(${materialId})"]`);
+        const materialCard = editButton.closest('.admin-item-card');
+        
+        // Save original content in case user cancels
+        const originalContent = materialCard.innerHTML;
+        
+        // Create edit form
+        materialCard.innerHTML = `
+            <form onsubmit="updateMaterial(event, ${materialId}, '${materialDate}'); return false;" style="width: 100%;">
+                <div class="form-row" style="margin-bottom: 15px;">
+                    <div class="form-group" style="flex: 2; margin-right: 10px;">
+                        <label class="form-label">Material Title</label>
+                        <input type="text" class="form-input" name="title" value="${materialToEdit.title}" required>
+                    </div>
+                    <div class="form-group" style="flex: 2;">
+                        <label class="form-label">Link/URL</label>
+                        <input type="url" class="form-input" name="link" value="${materialToEdit.link}" required>
+                    </div>
+                </div>
+                <div class="form-row" style="margin-bottom: 15px;">
+                    <div class="form-group" style="flex: 2; margin-right: 10px;">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-input" name="description" value="${materialToEdit.description || ''}">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">Password</label>
+                        <input type="text" class="form-input" name="password" value="${materialToEdit.password || ''}" placeholder="Optional">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button type="submit" class="btn btn-primary">Update Material</button>
+                    <button type="button" class="btn btn-secondary" onclick="cancelMaterialEdit(this, \`${originalContent.replace(/`/g, '\\`')}\`)">Cancel</button>
+                </div>
+            </form>
+        `;
+    
+        materialCard.style.padding = '20px';
+        
+    } catch (error) {
+        console.error('Edit material error:', error);
+        showNotification('Failed to edit material', true);
+    }
+}
         // Delete Material
         async function deleteMaterial(materialId) {
             if (!confirm('Are you sure you want to delete this material?')) return;
@@ -3096,7 +3160,46 @@ function cancelEdit(button, originalContent) {
                 showNotification('Failed to delete material', true);
             }
         }
+        async function updateMaterial(e, materialId, materialDate) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            
+            try {
+                const updatedMaterial = await apiCall(`/materials/${materialId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        title: formData.get('title'),
+                        link: formData.get('link'),
+                        description: formData.get('description') || '',
+                        password: formData.get('password') || ''
+                    })
+                });
+                
+                // Update cache
+                const school = app.state.selectedSchool;
+                const materialIndex = calendarCache.materials[school][materialDate].findIndex(m => m.id === materialId);
+                if (materialIndex !== -1) {
+                    calendarCache.materials[school][materialDate][materialIndex] = updatedMaterial;
+                }
+                
+                // Refresh modal and calendar
+                const modalDate = document.getElementById('modalDate').textContent;
+                openAdminModal(materialDate, modalDate);
+                renderCalendar();
+                showNotification('Material updated successfully!');
+            } catch (error) {
+                console.error('Update material error:', error);
+                showNotification('Failed to update material', true);
+            }
+        }
 
+        // STEP 4: Add the cancel function
+        function cancelMaterialEdit(button, originalContent) {
+            const materialCard = button.closest('.admin-item-card');
+            materialCard.innerHTML = originalContent;
+            materialCard.style.padding = '12px'; // Reset to original padding
+}
         // Update the showAdminGrade function to include dateStr parameter
         function showAdminGrade(grade, button, dateStr) {
             // Update active tab
