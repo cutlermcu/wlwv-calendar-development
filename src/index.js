@@ -1,3 +1,10 @@
+import { 
+    handleBulkMaterialsImport, 
+    handleUndoBulkImport, 
+    handleGetImportHistory,
+    initBulkImportSchema 
+} from './bulk-import.js';
+
 // Helper function to format dates consistently
 function formatDate(dateInput) {
     if (!dateInput) return null;
@@ -76,7 +83,9 @@ async function handleApiRequest(request, env, url) {
                     daySchedules: '/api/day-schedules',
                     dayTypes: '/api/day-types',
                     events: '/api/events',
-                    materials: '/api/materials'
+                    materials: '/api/materials',
+                    bulkImport: 'POST /api/materials/bulk',
+                    importHistory: '/api/materials/imports'
                 },
                 features: [
                     'Password-protected materials',
@@ -84,6 +93,7 @@ async function handleApiRequest(request, env, url) {
                     'A/B day scheduling',
                     'Event management',
                     'Grade-level materials',
+                    'Bulk import with CSV',
                     'Serverless D1 database'
                 ]
             });
@@ -163,6 +173,23 @@ async function handleApiRequest(request, env, url) {
             }
         }
 
+        // BULK IMPORT ROUTES - Fixed placement
+        if (pathname === '/api/materials/bulk' && method === 'POST') {
+            return handleBulkMaterialsImport(request, env, corsResponse);
+        }
+        
+        // Undo bulk import
+        if (pathname.startsWith('/api/materials/bulk/') && method === 'DELETE') {
+            const batchId = pathname.split('/')[4];
+            return handleUndoBulkImport(env, batchId, corsResponse);
+        }
+        
+        // Get import history
+        if (pathname === '/api/materials/imports' && method === 'GET') {
+            return handleGetImportHistory(env, corsResponse);
+        }
+
+        // Individual material routes
         if (pathname.startsWith('/api/materials/')) {
             const materialId = pathname.split('/')[3];
             if (method === 'PUT') {
@@ -248,12 +275,15 @@ async function handleDatabaseInit(env) {
         await env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_day_schedules_date ON day_schedules(date)`).run();
         await env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_day_types_date ON day_types(date)`).run();
 
+        // Initialize bulk import schema
+        await initBulkImportSchema(env);
+
         console.log('Database schema initialized successfully!');
 
         return corsResponse({ 
             message: 'Database initialized successfully',
-            tables: ['day_schedules', 'day_types', 'events', 'materials'],
-            features: ['password-protected materials', 'multi-school support', 'performance indexes'],
+            tables: ['day_schedules', 'day_types', 'events', 'materials', 'import_batches'],
+            features: ['password-protected materials', 'multi-school support', 'bulk import', 'performance indexes'],
             database: 'Cloudflare D1',
             environment: env.NODE_ENV || 'production',
             timestamp: new Date().toISOString()
@@ -464,19 +494,19 @@ async function handleDeleteEvent(env, eventId) {
 async function handleGetMaterials(request, env, url) {
     try {
         const school = url.searchParams.get('school');
-
+        
         if (!school) {
             return corsResponse({ error: 'School parameter is required' }, 400);
         }
-
+        
         if (!['wlhs', 'wvhs'].includes(school)) {
             return corsResponse({ error: 'School must be wlhs or wvhs' }, 400);
         }
-
+        
         const result = await env.DB.prepare(
-            'SELECT id, school, date, grade_level, title, link, description, password, created_at, updated_at FROM materials WHERE school = ? ORDER BY date, grade_level, id'
+            'SELECT id, school, date, grade_level, title, link, description, password, import_batch_id, created_at, updated_at FROM materials WHERE school = ? ORDER BY date, grade_level, id'
         ).bind(school).all();
-
+        
         return corsResponse(result.results);
     } catch (error) {
         console.error('Error fetching materials:', error);
