@@ -1479,7 +1479,93 @@
             border-top-color: white;
             animation: spin 1s ease-in-out infinite;
         }
+        .nav-dropdown {
+                position: relative;
+                overflow: visible;
+                display: inline-block;
+            }
 
+            .nav-dropdown-btn {
+                background: rgba(255, 255, 255, 0.1);
+                border: 2px solid rgba(255, 255, 255, 0.3);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 20px;
+                cursor: pointer;
+                font-weight: 600;
+            }
+
+            .nav-dropdown-btn:hover {
+                background: rgba(255, 255, 255, 0.2);
+            }
+
+            .nav-dropdown-content {
+                display: none;
+                position: absolute;
+                right: 0;
+                top: 100%;
+                margin-top: 8px;
+                background: white;
+                min-width: 180px;
+                max-width: 250px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+                border-radius: 8px;
+                overflow: visible;
+                z-index: 1000;
+                white-space:nowrap;
+                border: 1px solid #e5e7eb;
+            }
+
+            .nav-dropdown-content a {
+                color: #374151;
+                padding: 12px 16px;
+                text-decoration: none;
+                display: block;  /* This is crucial */
+                transition: background 0.2s;
+                font-weight: 500;
+            }
+
+            .nav-dropdown.show .nav-dropdown-content {
+                display: block;
+            }
+
+            .staff-link-card {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 20px;
+                margin-bottom: 15px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                transition: all 0.2s;
+            }
+
+            .staff-link-card:hover {
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            }
+
+            .staff-link-info h3 {
+                margin: 0 0 8px 0;
+                color: #1f2937;
+                font-size: 1.1rem;
+            }
+
+            .staff-link-info a {
+                color: #3b82f6;
+                text-decoration: none;
+                font-size: 0.9rem;
+            }
+
+            .staff-link-info a:hover {
+                text-decoration: none;
+            }
+
+            .staff-link-actions {
+                display: flex;
+                gap: 8px;
+            }
+        
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
@@ -1505,6 +1591,7 @@
                 gap: 10px;
             }
         }
+
     </style>
 </head>
 <body>
@@ -1605,14 +1692,62 @@
                             <option value="wlhs">🦁 West Linn HS</option>
                             <option value="wvhs">🐱 Wilsonville HS</option>
                         </select>
-                        <button class="admin-toggle" id="adminToggle">
-                            Admin Mode: OFF
-                        </button>
+                        <div class="nav-dropdown">
+                            <button class="nav-dropdown-btn" id="navDropdownBtn">Menu ▼</button>
+                            <div class="nav-dropdown-content" id="navDropdownContent">
+                                <a href="#" onclick="showScreen('staff-links')">👥 Staff Links</a>
+                                <a href="#" onclick="adminLogin()" id="adminLoginLink">🔐 Admin Login</a>
+                                <a href="#" onclick="showScreen('admin')" id="adminPanelLink" style="display: none;">⚙️ Admin Panel</a>
+                                <a href="#" onclick="adminLogout()" id="adminLogoutLink" style="display: none;">🚪 Logout</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="calendar-grid" id="calendarGrid">
                     <!-- Calendar will be generated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Staff Links Screen -->
+        <div class="screen" id="staff-links">
+            <div class="calendar-page">
+                <div class="calendar-header">
+                    <div>
+                        <button class="nav-btn" onclick="showScreen('home')">🏠 Home</button>
+                        <span style="margin-left: 20px; font-size: 1.7rem; font-weight: 700;">
+                            👥 Staff Links & Resources
+                        </span>
+                    </div>
+                </div>
+                
+                <div style="padding: 30px; background: white; margin: 20px; border-radius: 12px;">
+                    <div id="staffLinksContent">
+                        <div style="text-align: center; color: #6b7280; padding: 40px;">
+                            Loading staff links...
+                        </div>
+                    </div>
+                    
+                    <!-- Admin add form (hidden by default) -->
+                    <div id="staffLinksAdminForm" style="display: none; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                        <h3 style="margin-bottom: 20px;">Add New Staff Link</h3>
+                        <form onsubmit="addStaffLink(event); return false;">
+                            <div class="form-row">
+                                <div class="form-group" style="flex: 1;">
+                                    <label class="form-label">Link Title</label>
+                                    <input type="text" class="form-input" name="title" placeholder="e.g., Staff Portal" required>
+                                </div>
+                                <div class="form-group" style="flex: 1;">
+                                    <label class="form-label">URL</label>
+                                    <input type="url" class="form-input" name="url" placeholder="https://..." required>
+                                </div>
+                                <div class="form-group" style="flex: 0 0 120px; align-self: flex-end;">
+                                    <button type="submit" class="btn btn-add">Add Link</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2468,7 +2603,6 @@ function setApiUrl() {
             // Find the material card in the DOM
             const editButton = document.querySelector(`[onclick="editMaterial(${materialId})"]`);
             const materialCard = editButton.closest('.admin-item-card');
-            materialCard.dataset.originalContent = materialCard.innerHTML;
             
             // Save original content in case user cancels
             const originalContent = materialCard.innerHTML;
@@ -2503,7 +2637,7 @@ function setApiUrl() {
                     </div>
                     <div style="display: flex; gap: 10px; justify-content: center;">
                         <button type="submit" class="btn btn-primary">Update Material</button>
-                        <button type="button" class="btn btn-secondary" onclick="cancelMaterialEdit(this)">Cancel</button>
+                        <button type="button" class="btn btn-secondary" onclick="cancelMaterialEdit(this, '${btoa(originalContent)}')">Cancel</button>
                     </div>
                 </form>
             `;
@@ -2576,12 +2710,11 @@ function setApiUrl() {
         }
     }
 
-    function cancelMaterialEdit(button) {
-    const materialCard = button.closest('.admin-item-card');
-    const originalContent = materialCard.dataset.originalContent;
-    materialCard.innerHTML = originalContent;
-    materialCard.style.padding = '12px';
-    delete materialCard.dataset.originalContent;
+    function cancelMaterialEdit(button, encodedOriginalContent) {
+        const materialCard = button.closest('.admin-item-card');
+        const originalContent = atob(encodedOriginalContent); // Decode from base64
+        materialCard.innerHTML = originalContent;
+        materialCard.style.padding = '12px'; // Reset to original padding
     }
 
     function showAdminGrade(grade, button, dateStr) {
@@ -3035,6 +3168,10 @@ async function updateEvent(e, eventId, eventDate) {
             if (screenId === 'calendar' && app.state.connected) {
                 renderCalendar();
             }
+
+            if (screenId === 'staff-links') {
+            loadStaffLinks();
+            }
         }
 
         function goToSchool(schoolCode) {
@@ -3145,57 +3282,51 @@ async function updateEvent(e, eventId, eventDate) {
         }
 
         // Make toggleAdminMode globally accessible
-        window.toggleAdminMode = function(event) {
-            if (event) event.preventDefault();
-            
-            console.log('Toggle admin mode called, current state:', app.state.adminMode);
-            
-            // If turning on admin mode, require password
-            if (!app.state.adminMode) {
-                try {
-                    const password = window.prompt('Enter admin password:');
-                    console.log('Password prompt result:', password);
-                    if (password === null) {
-                        console.log('Password cancelled');
-                        return;
-                    }
-                    if (password !== 'wlwv') {
-                        console.log('Incorrect password');
-                        alert('Incorrect password');
-                        return;
-                    }
-                    console.log('Correct password');
-                } catch (e) {
-                    console.error('Error with prompt:', e);
-                    alert('Error showing password prompt');
+        window.adminLogin = function() {
+                const password = window.prompt('Enter admin password:');
+                if (password === null) return;
+                
+                if (password !== 'wlwv') {
+                    alert('Incorrect password');
                     return;
                 }
-            }
-            
-            app.state.adminMode = !app.state.adminMode;
-            console.log('Admin mode now:', app.state.adminMode);
+                
+                app.state.adminMode = true;
+                updateAdminUI();
+                showNotification('Admin mode enabled');
+                renderCalendar();
+            };
 
-            const button = document.getElementById('adminToggle');
-            if (button) {
-                button.textContent = `Admin Mode: ${app.state.adminMode ? 'ON' : 'OFF'}`;
+            window.adminLogout = function() {
+                app.state.adminMode = false;
+                updateAdminUI();
+                showNotification('Admin mode disabled');
+                renderCalendar();
+            };
+
+            function updateAdminUI() {
+                const adminLoginLink = document.getElementById('adminLoginLink');
+                const adminPanelLink = document.getElementById('adminPanelLink');
+                const adminLogoutLink = document.getElementById('adminLogoutLink');
+                
                 if (app.state.adminMode) {
-                    button.classList.add('active');
+                    adminLoginLink.style.display = 'none';
+                    adminPanelLink.style.display = 'block';
+                    adminLogoutLink.style.display = 'block';
                     document.body.classList.add('admin-active');
                 } else {
-                    button.classList.remove('active');
+                    adminLoginLink.style.display = 'block';
+                    adminPanelLink.style.display = 'none';
+                    adminLogoutLink.style.display = 'none';
                     document.body.classList.remove('admin-active');
                 }
+                
+                // Show/hide staff links admin form
+                const staffAdminForm = document.getElementById('staffLinksAdminForm');
+                if (staffAdminForm) {
+                    staffAdminForm.style.display = app.state.adminMode ? 'block' : 'none';
+                }
             }
-
-            // Toggle admin access buttons visibility
-            const adminAccess = document.getElementById('adminAccess');
-            if (adminAccess) {
-                adminAccess.style.display = app.state.adminMode ? 'flex' : 'none';
-            }
-
-            showNotification(`Admin mode ${app.state.adminMode ? 'enabled' : 'disabled'}`);
-            renderCalendar(); // Re-render to show/hide admin controls
-        };
 
         function changeMonth(direction) {
             app.state.currentDate.setMonth(app.state.currentDate.getMonth() + direction);
@@ -3248,26 +3379,31 @@ async function updateEvent(e, eventId, eventDate) {
                 showNotification('Please check your Cloudflare Workers deployment', true);
                 renderCalendar(); // Still render calendar even if disconnected
             }
+            updateAdminUI();
         }
 
         // Initialize when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
             initializeApp();
-            
+            // Add this inside your DOMContentLoaded function:
+        const navDropdownBtn = document.getElementById('navDropdownBtn');
+        if (navDropdownBtn) {
+            navDropdownBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                document.getElementById('navDropdownContent').parentElement.classList.toggle('show');
+            });
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.nav-dropdown')) {
+                document.querySelectorAll('.nav-dropdown.show').forEach(dropdown => {
+                    dropdown.classList.remove('show');
+                });
+            }
+        });
             // Add event listener for admin toggle after a small delay to ensure button exists
-            setTimeout(() => {
-                const adminToggle = document.getElementById('adminToggle');
-                if (adminToggle) {
-                    console.log('Adding click listener to admin toggle button');
-                    adminToggle.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        console.log('Admin toggle clicked via event listener');
-                        window.toggleAdminMode(e);
-                    });
-                } else {
-                    console.error('Admin toggle button not found!');
-                }
-            }, 100);
+    
         });
 
         // Handle clicks for admin dropdowns
@@ -3510,7 +3646,7 @@ function showGoogleSheetsInstructions() {
         wvhs	2025-08-20	9	Algebra 1 Textbook	https://example.com/algebra1	Chapters 1-3 for first week	math123
         wvhs	2025-08-20	11	US History Resources	https://example.com/history	Constitution and Bill of Rights	
         wvhs	2025-08-20	12	AP Literature Guide	https://example.com/ap-lit	Summer reading discussion materials	`;
-        
+        }
             // Copy to clipboard
             navigator.clipboard.writeText(templateData).then(() => {
                 showNotification('📋 Template copied to clipboard! Paste it into your Google Sheet.');
@@ -3526,7 +3662,6 @@ function showGoogleSheetsInstructions() {
                 document.body.removeChild(textarea);
                 showNotification('📋 Template copied! Paste it into your Google Sheet.');
             });
-        }
 
             // Handle file selection
             function handleFileSelect(files) {
@@ -3840,8 +3975,100 @@ function showGoogleSheetsInstructions() {
                     loadImportHistory();
                 }
             });
+            // Staff Links Management
+            async function loadStaffLinks() {
+                try {
+                    const links = await apiCall('/staff-links');
+                    renderStaffLinks(links);
+                } catch (error) {
+                    document.getElementById('staffLinksContent').innerHTML = `
+                        <div style="text-align: center; color: #ef4444; padding: 40px;">
+                            Failed to load staff links
+                        </div>
+                    `;
+                }
+            }
+
+            function renderStaffLinks(links) {
+                const container = document.getElementById('staffLinksContent');
+                if (!container) return;
+                
+                if (links.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; color: #6b7280; padding: 40px;">
+                            <div style="font-size: 3rem; margin-bottom: 10px;">📋</div>
+                            <div>No staff links available</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '<div style="margin-bottom: 20px;"><h3>Staff Resources</h3></div>';
+                
+                links.forEach(link => {
+                    html += `
+                        <div class="staff-link-card">
+                            <div class="staff-link-info">
+                                <h3>${link.title}</h3>
+                                <a href="${link.url}" target="_blank">${link.url}</a>
+                            </div>
+                            ${app.state.adminMode ? `
+                                <div class="staff-link-actions">
+                                    <button class="btn btn-sm btn-edit" onclick="editStaffLink(${link.id})">Edit</button>
+                                    <button class="btn btn-sm btn-delete" onclick="deleteStaffLink(${link.id})">Delete</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            }
+
+            async function addStaffLink(e) {
+                e.preventDefault();
+                const form = e.target;
+                const formData = new FormData(form);
+                
+                try {
+                    await apiCall('/staff-links', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            title: formData.get('title'),
+                            url: formData.get('url')
+                        })
+                    });
+                    
+                    form.reset();
+                    loadStaffLinks();
+                    showNotification('Staff link added successfully!');
+                } catch (error) {
+                    showNotification('Failed to add staff link', true);
+                }
+            }
+
+            async function deleteStaffLink(linkId) {
+                if (!confirm('Are you sure you want to delete this staff link?')) return;
+                
+                try {
+                    await apiCall(`/staff-links/${linkId}`, { method: 'DELETE' });
+                    loadStaffLinks();
+                    showNotification('Staff link deleted successfully!');
+                } catch (error) {
+                    showNotification('Failed to delete staff link', true);
+                }
+            }
+
+            async function editStaffLink(linkId) {
+                // Similar to your editMaterial function - implement inline editing
+                // You can follow the same pattern you used for materials
+            }
 
             // Make functions globally accessible
+            window.loadStaffLinks = loadStaffLinks;
+            window.addStaffLink = addStaffLink;
+            window.deleteStaffLink = deleteStaffLink;
+            window.editStaffLink = editStaffLink;
             window.downloadCSVTemplate = downloadCSVTemplate;
             window.handleFileSelect = handleFileSelect;
             window.previewCSV = previewCSV;

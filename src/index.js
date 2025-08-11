@@ -84,6 +84,7 @@ async function handleApiRequest(request, env, url) {
                     dayTypes: '/api/day-types',
                     events: '/api/events',
                     materials: '/api/materials',
+                    staffLinks: '/api/staff-links',
                     bulkImport: 'POST /api/materials/bulk',
                     importHistory: '/api/materials/imports'
                 },
@@ -198,7 +199,23 @@ async function handleApiRequest(request, env, url) {
                 return handleDeleteMaterial(env, materialId);
             }
         }
-
+        if (pathname === '/api/staff-links') {
+            if (method === 'GET') {
+                return handleGetStaffLinks(env);
+            } else if (method === 'POST') {
+                return handlePostStaffLink(request, env);
+            }
+        }
+        
+        if (pathname.startsWith('/api/staff-links/')) {
+            const linkId = pathname.split('/')[3];
+            if (method === 'PUT') {
+                return handlePutStaffLink(request, env, linkId);
+            } else if (method === 'DELETE') {
+                return handleDeleteStaffLink(env, linkId);
+            }
+        }
+        
         // 404 for unknown API routes
         return corsResponse({ 
             error: 'Not found',
@@ -212,6 +229,7 @@ async function handleApiRequest(request, env, url) {
             error: 'Internal server error',
             message: error.message
         }, 500);
+    
     }
 }
 
@@ -589,6 +607,100 @@ async function handleDeleteMaterial(env, materialId) {
         return corsResponse({ success: true, id: parseInt(materialId) });
     } catch (error) {
         console.error('Error deleting material:', error);
+        return corsResponse({ error: error.message }, 500);
+    }
+}
+
+async function handleGetStaffLinks(env) {
+    try {
+        const result = await env.DB.prepare(
+            'SELECT id, title, url, created_at, updated_at FROM staff_links ORDER BY created_at DESC'
+        ).all();
+        
+        return corsResponse(result.results);
+    } catch (error) {
+        console.error('Error fetching staff links:', error);
+        return corsResponse({ error: error.message }, 500);
+    }
+}
+
+async function handlePostStaffLink(request, env) {
+    try {
+        const { title, url } = await request.json();
+
+        if (!title || !url) {
+            return corsResponse({ error: 'Title and URL are required' }, 400);
+        }
+
+        // Basic URL validation
+        try {
+            new URL(url);
+        } catch {
+            return corsResponse({ error: 'Invalid URL format' }, 400);
+        }
+
+        const result = await env.DB.prepare(`
+            INSERT INTO staff_links (title, url)
+            VALUES (?, ?)
+        `).bind(title, url).run();
+
+        // Get the inserted record
+        const newLink = await env.DB.prepare(
+            'SELECT id, title, url, created_at, updated_at FROM staff_links WHERE id = ?'
+        ).bind(result.meta.last_row_id).first();
+
+        return corsResponse(newLink);
+    } catch (error) {
+        console.error('Error creating staff link:', error);
+        return corsResponse({ error: error.message }, 500);
+    }
+}
+async function handlePutStaffLink(request, env, linkId) {
+    try {
+        const { title, url } = await request.json();
+
+        if (!title || !url) {
+            return corsResponse({ error: 'Title and URL are required' }, 400);
+        }
+
+        // Basic URL validation
+        try {
+            new URL(url);
+        } catch {
+            return corsResponse({ error: 'Invalid URL format' }, 400);
+        }
+
+        await env.DB.prepare(`
+            UPDATE staff_links 
+            SET title = ?, url = ?, updated_at = datetime('now')
+            WHERE id = ?
+        `).bind(title, url, linkId).run();
+
+        const updatedLink = await env.DB.prepare(
+            'SELECT id, title, url, created_at, updated_at FROM staff_links WHERE id = ?'
+        ).bind(linkId).first();
+
+        if (!updatedLink) {
+            return corsResponse({ error: 'Staff link not found' }, 404);
+        }
+
+        return corsResponse(updatedLink);
+    } catch (error) {
+        console.error('Error updating staff link:', error);
+        return corsResponse({ error: error.message }, 500);
+    }
+}
+async function handleDeleteStaffLink(env, linkId) {
+    try {
+        const result = await env.DB.prepare('DELETE FROM staff_links WHERE id = ?').bind(linkId).run();
+
+        if (result.changes === 0) {
+            return corsResponse({ error: 'Staff link not found' }, 404);
+        }
+
+        return corsResponse({ success: true, id: parseInt(linkId) });
+    } catch (error) {
+        console.error('Error deleting staff link:', error);
         return corsResponse({ error: error.message }, 500);
     }
 }
