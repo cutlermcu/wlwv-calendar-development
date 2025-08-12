@@ -506,31 +506,34 @@ function validateEventRow(row, rowIndex) {
     return errors;
 }
 
-// Main bulk events import handler
-export async function handleBulkEventsImport(request, env, corsResponse) {
-    try {
-        const contentType = request.headers.get('content-type') || '';
-        let csvData = '';
-        let mode = 'preview'; // default to preview mode
-        
-        // Parse request based on content type
-        if (contentType.includes('multipart/form-data')) {
-            const formData = await request.formData();
-            const file = formData.get('file');
-            mode = formData.get('mode') || 'preview';
+    //Main Bulk Events Import Function
+    export async function handleBulkEventsImport(request, env, corsResponse) {
+        try {
+            const contentType = request.headers.get('content-type') || '';
+            let csvData = '';
+            let mode = 'preview';
+            let requestBody = {}; // Add this to store the full request body
             
-            if (file) {
-                csvData = await file.text();
+            // Parse request based on content type
+            if (contentType.includes('multipart/form-data')) {
+                const formData = await request.formData();
+                const file = formData.get('file');
+                mode = formData.get('mode') || 'preview';
+                requestBody.duplicateAction = formData.get('duplicateAction') || 'skip';
+                
+                if (file) {
+                    csvData = await file.text();
+                }
+            } else if (contentType.includes('application/json')) {
+                requestBody = await request.json(); // Store the full body
+                csvData = requestBody.csvData || requestBody.csv || '';
+                mode = requestBody.mode || 'preview';
+            } else {
+                // Assume raw CSV data
+                csvData = await request.text();
+                mode = new URL(request.url).searchParams.get('mode') || 'preview';
+                requestBody.duplicateAction = 'skip';
             }
-        } else if (contentType.includes('application/json')) {
-            const body = await request.json();
-            csvData = body.csvData || body.csv || '';
-            mode = body.mode || 'preview';
-        } else {
-            // Assume raw CSV data
-            csvData = await request.text();
-            mode = new URL(request.url).searchParams.get('mode') || 'preview';
-        }
         
         if (!csvData) {
             return corsResponse({ error: 'No CSV data provided' }, 400);
@@ -606,19 +609,6 @@ export async function handleBulkEventsImport(request, env, corsResponse) {
                 },
                 isDuplicate: !!existing
             });
-            
-            // Add to valid results
-            results.valid.push({
-                row: rowIndex,
-                data: {
-                    school: row.school.toLowerCase(),
-                    date: formatDate(row.date),
-                    title: row.title.trim(),
-                    department: row.department ? row.department.trim() : null,
-                    time: row.time ? row.time.trim() : null,
-                    description: row.description ? row.description.trim() : ''
-                }
-            });
         }
         
         // If preview mode, return validation results
@@ -639,7 +629,23 @@ export async function handleBulkEventsImport(request, env, corsResponse) {
         
         // Commit mode - actually insert the data
         if (mode === 'commit') {
-            const duplicateAction = body.duplicateAction || 'skip';
+            if (results.valid.length === 0) {
+                return corsResponse({ 
+                    error: 'No valid events to import',
+                    summary: {
+                        total: rows.length,
+                        valid: 0,
+                        invalid: results.invalid.length,
+                        duplicates: results.duplicates.length
+                    }
+                }, 400);
+            }
+            
+            const duplicateAction = requestBody.duplicateAction || 'skip';
+            
+            // Generate batch ID for tracking - MOVE THIS TO THE TOP
+            const batchId = crypto.randomUUID();
+            let insertedCount = 0;
             
             // Process based on duplicate action
             for (const validRow of results.valid) {
@@ -658,7 +664,7 @@ export async function handleBulkEventsImport(request, env, corsResponse) {
                             validRow.data.department,
                             validRow.data.time,
                             validRow.data.description,
-                            batchId,
+                            batchId, // Now this will work
                             validRow.data.school,
                             validRow.data.date,
                             validRow.data.title
@@ -685,7 +691,6 @@ export async function handleBulkEventsImport(request, env, corsResponse) {
                     insertedCount++;
                 }
             }
-        }
             
             // Record the import batch
             await env.DB.prepare(`
@@ -695,7 +700,7 @@ export async function handleBulkEventsImport(request, env, corsResponse) {
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `).bind(
                 batchId,
-                'admin', // You might want to track actual user later
+                'admin',
                 rows.length,
                 insertedCount,
                 results.invalid.length,
@@ -724,15 +729,17 @@ export async function handleBulkEventsImport(request, env, corsResponse) {
                 }
             });
         }
-        
-    catch (error) {
-        console.error('Events bulk import error:', error);
-        return corsResponse({
-            error: 'Import failed',
-            message: error.message
-        }, 500);
+    
+    } catch (error) {
+    console.error('Events bulk import error:', error);
+    return corsResponse({
+        error: 'Import failed',
+        message: error.message
+    }, 500);
+        }
     }
-}
+    
+
 
 // Undo events bulk import
 export async function handleUndoEventsBulkImport(env, batchId, corsResponse) {
