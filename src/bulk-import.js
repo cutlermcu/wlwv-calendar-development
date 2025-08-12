@@ -424,11 +424,384 @@ export async function initBulkImportSchema(env) {
             ON materials(import_batch_id)
         `).run();
         
+        // Create events_import_batches table
+        await env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS events_import_batches (
+        id TEXT PRIMARY KEY,
+        imported_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        imported_by TEXT,
+        total_count INTEGER NOT NULL,
+        success_count INTEGER NOT NULL,
+        error_count INTEGER NOT NULL,
+        duplicate_count INTEGER NOT NULL,
+        status TEXT NOT NULL,
+        summary TEXT
+            )
+        `).run();
+
+        // Add import_batch_id column to events table if it doesn't exist
+        try {
+            await env.DB.prepare(`
+                ALTER TABLE events ADD COLUMN import_batch_id TEXT
+            `).run();
+            console.log('Added import_batch_id column to events table');
+        } catch (e) {
+            // Column might already exist
+            console.log('import_batch_id column may already exist for events');
+        }
+
+        // Create indexes for better performance
+        await env.DB.prepare(`
+            CREATE INDEX IF NOT EXISTS idx_events_school_date_title 
+            ON events(school, date, title)
+        `).run();
+
+        await env.DB.prepare(`
+            CREATE INDEX IF NOT EXISTS idx_events_import_batch 
+            ON events(import_batch_id)
+        `).run();
+
         console.log('Bulk import schema initialized successfully');
         return true;
         
     } catch (error) {
         console.error('Error initializing bulk import schema:', error);
         throw error;
+    }
+}
+
+// EVENTS BULK IMPORT FUNCTIONS
+
+// Validate a single event row
+function validateEventRow(row, rowIndex) {
+    const errors = [];
+    
+    // Required fields
+    if (!row.school || !['wlhs', 'wvhs'].includes(row.school.toLowerCase())) {
+        errors.push(`Row ${rowIndex}: School must be 'wlhs' or 'wvhs'`);
+    }
+    
+    if (!row.date) {
+        errors.push(`Row ${rowIndex}: Date is required`);
+    } else {
+        try {
+            const date = new Date(row.date);
+            if (isNaN(date.getTime())) {
+                errors.push(`Row ${rowIndex}: Invalid date format (use YYYY-MM-DD)`);
+            }
+        } catch (e) {
+            errors.push(`Row ${rowIndex}: Invalid date format`);
+        }
+    }
+    
+    if (!row.title || row.title.trim().length === 0) {
+        errors.push(`Row ${rowIndex}: Title is required`);
+    }
+    
+    // Optional field validation
+    if (row.department && !['ASB', 'Life', 'Athletics', 'Art/Theater', 'Counseling', 'Testing', 'Staff'].includes(row.department)) {
+        errors.push(`Row ${rowIndex}: Invalid department (must be ASB, Life, Athletics, Art/Theater, Counseling, Testing, or Staff)`);
+    }
+    
+    return errors;
+}
+
+// Main bulk events import handler
+export async function handleBulkEventsImport(request, env, corsResponse) {
+    try {
+        const contentType = request.headers.get('content-type') || '';
+        let csvData = '';
+        let mode = 'preview'; // default to preview mode
+        
+        // Parse request based on content type
+        if (contentType.includes('multipart/form-data')) {
+            const formData = await request.formData();
+            const file = formData.get('file');
+            mode = formData.get('mode') || 'preview';
+            
+            if (file) {
+                csvData = await file.text();
+            }
+        } else if (contentType.includes('application/json')) {
+            const body = await request.json();
+            csvData = body.csvData || body.csv || '';
+            mode = body.mode || 'preview';
+        } else {
+            // Assume raw CSV data
+            csvData = await request.text();
+            mode = new URL(request.url).searchParams.get('mode') || 'preview';
+        }
+        
+        if (!csvData) {
+            return corsResponse({ error: 'No CSV data provided' }, 400);
+        }
+        
+        // Parse CSV
+        const { headers, rows } = parseCSV(csvData);
+        
+        // Validate headers
+        const requiredHeaders = ['school', 'date', 'title'];
+        const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+        if (missingHeaders.length > 0) {
+            return corsResponse({ 
+                error: 'Missing required headers: ' + missingHeaders.join(', '),
+                expected: requiredHeaders,
+                found: headers
+            }, 400);
+        }
+        
+        // Validate and process rows
+        const results = {
+            valid: [],
+            invalid: [],
+            duplicates: []
+        };
+        
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const rowIndex = i + 2; // +2 because CSV is 1-indexed and has header row
+            
+            // Validate row
+            const errors = validateEventRow(row, rowIndex);
+            
+            if (errors.length > 0) {
+                results.invalid.push({
+                    row: rowIndex,
+                    data: row,
+                    errors: errors
+                });
+                continue;
+            }
+            
+            // Check for duplicates in database (same school, date, title)
+            const existing = await env.DB.prepare(`
+                SELECT id FROM events 
+                WHERE school = ? AND date = ? AND title = ?
+            `).bind(
+                row.school.toLowerCase(), 
+                formatDate(row.date), 
+                row.title.trim()
+            ).first();
+            
+            if (existing) {
+                results.duplicates.push({
+                    row: rowIndex,
+                    data: row,
+                    existingId: existing.id,
+                    existingEvent: existing // Include the existing event data
+                });
+                // Don't continue here - let it also be marked as valid so user can choose
+            }
+            
+            // Add to valid results (even if it's a duplicate)
+            results.valid.push({
+                row: rowIndex,
+                data: {
+                    school: row.school.toLowerCase(),
+                    date: formatDate(row.date),
+                    title: row.title.trim(),
+                    department: row.department ? row.department.trim() : null,
+                    time: row.time ? row.time.trim() : null,
+                    description: row.description ? row.description.trim() : ''
+                },
+                isDuplicate: !!existing
+            });
+            
+            // Add to valid results
+            results.valid.push({
+                row: rowIndex,
+                data: {
+                    school: row.school.toLowerCase(),
+                    date: formatDate(row.date),
+                    title: row.title.trim(),
+                    department: row.department ? row.department.trim() : null,
+                    time: row.time ? row.time.trim() : null,
+                    description: row.description ? row.description.trim() : ''
+                }
+            });
+        }
+        
+        // If preview mode, return validation results
+        if (mode === 'preview') {
+            return corsResponse({
+                mode: 'preview',
+                summary: {
+                    total: rows.length,
+                    valid: results.valid.length,
+                    invalid: results.invalid.length,
+                    duplicates: results.duplicates.length
+                },
+                results: results,
+                sampleValid: results.valid.slice(0, 5), // Show first 5 valid rows as preview
+                headers: headers
+            });
+        }
+        
+        // Commit mode - actually insert the data
+        if (mode === 'commit') {
+            const duplicateAction = body.duplicateAction || 'skip';
+            
+            // Process based on duplicate action
+            for (const validRow of results.valid) {
+                if (validRow.isDuplicate) {
+                    if (duplicateAction === 'skip') {
+                        continue; // Skip this row
+                    } else if (duplicateAction === 'replace') {
+                        // Update existing event
+                        await env.DB.prepare(`
+                            UPDATE events 
+                            SET title = ?, department = ?, time = ?, description = ?, 
+                                updated_at = datetime('now'), import_batch_id = ?
+                            WHERE school = ? AND date = ? AND title = ?
+                        `).bind(
+                            validRow.data.title,
+                            validRow.data.department,
+                            validRow.data.time,
+                            validRow.data.description,
+                            batchId,
+                            validRow.data.school,
+                            validRow.data.date,
+                            validRow.data.title
+                        ).run();
+                        insertedCount++;
+                    }
+                    // For 'importAll', just insert normally (will create duplicate)
+                }
+                
+                if (!validRow.isDuplicate || duplicateAction === 'importAll') {
+                    // Insert new event
+                    await env.DB.prepare(`
+                        INSERT INTO events (school, date, title, department, time, description, import_batch_id)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    `).bind(
+                        validRow.data.school,
+                        validRow.data.date,
+                        validRow.data.title,
+                        validRow.data.department,
+                        validRow.data.time,
+                        validRow.data.description,
+                        batchId
+                    ).run();
+                    insertedCount++;
+                }
+            }
+        }
+            
+            // Record the import batch
+            await env.DB.prepare(`
+                INSERT INTO events_import_batches (
+                    id, imported_by, total_count, success_count, 
+                    error_count, duplicate_count, status, summary
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `).bind(
+                batchId,
+                'admin', // You might want to track actual user later
+                rows.length,
+                insertedCount,
+                results.invalid.length,
+                results.duplicates.length,
+                'completed',
+                JSON.stringify({
+                    totalRows: rows.length,
+                    validRows: results.valid.length,
+                    invalidRows: results.invalid.length,
+                    duplicateRows: results.duplicates.length,
+                    insertedCount: insertedCount
+                })
+            ).run();
+            
+            return corsResponse({
+                success: true,
+                mode: 'commit',
+                imported: insertedCount,
+                batchId: batchId,
+                summary: {
+                    total: rows.length,
+                    valid: results.valid.length,
+                    invalid: results.invalid.length,
+                    duplicates: results.duplicates.length,
+                    inserted: insertedCount
+                }
+            });
+        }
+        
+    catch (error) {
+        console.error('Events bulk import error:', error);
+        return corsResponse({
+            error: 'Import failed',
+            message: error.message
+        }, 500);
+    }
+}
+
+// Undo events bulk import
+export async function handleUndoEventsBulkImport(env, batchId, corsResponse) {
+    try {
+        // Get batch info
+        const batch = await env.DB.prepare(`
+            SELECT * FROM events_import_batches 
+            WHERE id = ? AND status = 'completed'
+            AND datetime(imported_at) > datetime('now', '-7 days')
+        `).bind(batchId).first();
+        
+        if (!batch) {
+            return corsResponse({
+                error: 'Batch not found or too old to undo (>1 week)'
+            }, 404);
+        }
+        
+        // Delete events from this batch
+        const result = await env.DB.prepare(`
+            DELETE FROM events WHERE import_batch_id = ?
+        `).bind(batchId).run();
+        
+        // Update batch status
+        await env.DB.prepare(`
+            UPDATE events_import_batches 
+            SET status = 'undone' 
+            WHERE id = ?
+        `).bind(batchId).run();
+        
+        return corsResponse({
+            success: true,
+            message: `Removed ${result.changes} events from batch ${batchId}`,
+            deletedCount: result.changes,
+            batch: {
+                id: batch.id,
+                importedAt: batch.imported_at,
+                totalCount: batch.total_count
+            }
+        });
+        
+    } catch (error) {
+        console.error('Undo events import error:', error);
+        return corsResponse({
+            error: 'Failed to undo import',
+            message: error.message
+        }, 500);
+    }
+}
+
+// Get events import history
+export async function handleGetEventsImportHistory(env, corsResponse) {
+    try {
+        const result = await env.DB.prepare(`
+            SELECT * FROM events_import_batches 
+            WHERE datetime(imported_at) > datetime('now', '-7 days')
+            ORDER BY imported_at DESC
+            LIMIT 20
+        `).all();
+        
+        return corsResponse({
+            imports: result.results,
+            count: result.results.length
+        });
+        
+    } catch (error) {
+        console.error('Error fetching events import history:', error);
+        return corsResponse({
+            error: 'Failed to fetch import history',
+            message: error.message
+        }, 500);
     }
 }

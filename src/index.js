@@ -2,7 +2,10 @@ import {
     handleBulkMaterialsImport, 
     handleUndoBulkImport, 
     handleGetImportHistory,
-    initBulkImportSchema 
+    handleBulkEventsImport,
+    handleUndoEventsBulkImport, 
+    handleGetEventsImportHistory,
+    initBulkImportSchema
 } from './bulk-import.js';
 
 // Helper function to format dates consistently
@@ -155,14 +158,28 @@ async function handleApiRequest(request, env, url) {
                 return handlePostEvent(request, env);
             }
         }
-
-        if (pathname.startsWith('/api/events/')) {
+        //INDIVIDUAL EVENTS ROUTES
+        if (pathname.startsWith('/api/events/') && !pathname.includes('bulk') && !pathname.includes('imports')) {
             const eventId = pathname.split('/')[3];
             if (method === 'PUT') {
                 return handlePutEvent(request, env, eventId);
             } else if (method === 'DELETE') {
                 return handleDeleteEvent(env, eventId);
             }
+        }
+
+        // EVENTS BULK IMPORT ROUTES
+        if (pathname === '/api/events/bulk' && method === 'POST') {
+            return handleBulkEventsImport(request, env, corsResponse);
+        }
+
+        if (pathname.startsWith('/api/events/bulk/') && method === 'DELETE') {
+            const batchId = pathname.split('/')[4];
+            return handleUndoEventsBulkImport(env, batchId, corsResponse);
+        }
+
+        if (pathname === '/api/events/imports' && method === 'GET') {
+            return handleGetEventsImportHistory(env, corsResponse);
         }
 
         // Materials routes
@@ -174,22 +191,6 @@ async function handleApiRequest(request, env, url) {
             }
         }
 
-        // BULK IMPORT ROUTES - Fixed placement
-        if (pathname === '/api/materials/bulk' && method === 'POST') {
-            return handleBulkMaterialsImport(request, env, corsResponse);
-        }
-        
-        // Undo bulk import
-        if (pathname.startsWith('/api/materials/bulk/') && method === 'DELETE') {
-            const batchId = pathname.split('/')[4];
-            return handleUndoBulkImport(env, batchId, corsResponse);
-        }
-        
-        // Get import history
-        if (pathname === '/api/materials/imports' && method === 'GET') {
-            return handleGetImportHistory(env, corsResponse);
-        }
-
         // Individual material routes
         if (pathname.startsWith('/api/materials/')) {
             const materialId = pathname.split('/')[3];
@@ -199,6 +200,21 @@ async function handleApiRequest(request, env, url) {
                 return handleDeleteMaterial(env, materialId);
             }
         }
+
+            // MATERIALS BULK IMPORT ROUTES
+        if (pathname === '/api/materials/bulk' && method === 'POST') {
+            return handleBulkMaterialsImport(request, env, corsResponse);
+        }
+
+        if (pathname.startsWith('/api/materials/bulk/') && method === 'DELETE') {
+            const batchId = pathname.split('/')[4];
+            return handleUndoBulkImport(env, batchId, corsResponse);
+        }
+
+        if (pathname === '/api/materials/imports' && method === 'GET') {
+            return handleGetImportHistory(env, corsResponse);
+        }
+        
         if (pathname === '/api/staff-links') {
             if (method === 'GET') {
                 return handleGetStaffLinks(env);
@@ -215,7 +231,7 @@ async function handleApiRequest(request, env, url) {
                 return handleDeleteStaffLink(env, linkId);
             }
         }
-        
+
         // 404 for unknown API routes
         return corsResponse({ 
             error: 'Not found',
