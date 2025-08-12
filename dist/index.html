@@ -370,7 +370,8 @@
             cursor: pointer;
             display: flex;
             flex-direction: column;
-            overflow: visible;
+            overflow: hidden;
+            align-items: stretch; /* Stretch items to full width */
         }
 
         .calendar-day:hover {
@@ -418,10 +419,7 @@
 
         /* Additional styles for calendar elements */
         .event-title-indicator {
-            position: absolute;
-            top: 35px;
-            left: 50%;
-            transform: translateX(-50%);
+            position: relative;
             background: rgba(196, 30, 58, 0.9);
             color: white;
             padding: 2px 6px;
@@ -430,11 +428,19 @@
             font-weight: 600;
             white-space: nowrap;
             pointer-events: none;
-            max-width: 90%;
             text-align: center;
             overflow: hidden;
             text-overflow: ellipsis;
+            margin: 2px 0;
+            max-width: calc(100% - 15px);
+            box-sizing: border-box;
+            align-self: flex-start; /* Start from same position */
+            width: fit-content; /* Only as wide as content */
         }
+
+       /* .event-title-indicator:last-child {
+            margin: 2px;*/
+        
 
         .ab-schedule-display {
             position: absolute;
@@ -1529,14 +1535,39 @@
                 display: block;
             }
 
+            .staff-link-button {
+                background: #3b82f6;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 16px 24px;
+                font-size: 1.1rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                width: 100%;
+                text-align: left;
+                flex: 1;
+                margin-right: 16px;
+            }
+
+            .staff-link-button:hover {
+                background: #2563eb;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            }
+
+            .staff-link-button:active {
+                transform: translateY(0);
+            }
+            
             .staff-link-card {
                 background: white;
                 border: 1px solid #e5e7eb;
                 border-radius: 8px;
-                padding: 20px;
+                padding: 16px;
                 margin-bottom: 15px;
                 display: flex;
-                justify-content: space-between;
                 align-items: center;
                 transition: all 0.2s;
             }
@@ -1597,7 +1628,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1> WLWV Life Calendar</h1>
+            <h1> West Linn Wilsonville SD (25-26) </h1>
         </div>
 
         <div class="tabs">
@@ -1620,7 +1651,7 @@
                             <img src="https://pbs.twimg.com/profile_images/1894895031833726976/9f9O-2DF_400x400.jpg" 
                                  alt="West Linn Lions Logo">
                         </div>
-                        <h2>West Linn High School</h2>
+                        <h2>West Linn <br> High School</h2>
                         <p>Access WLHS calendar, events, and curriculum materials</p>
                         <div class="school-stats">
                             <div class="stat">
@@ -1645,7 +1676,7 @@
                                  style="width: 90px; height: 90px; object-fit: contain;"
                                  onerror="this.style.display='none'; this.parentNode.innerHTML='🐱';">
                         </div>
-                        <h2>Wilsonville High School</h2>
+                        <h2>Wilsonville <br> High School</h2>
                         <p>Access WHS calendar, events, and curriculum materials</p>
                         <div class="school-stats">
                             <div class="stat">
@@ -2138,14 +2169,25 @@ function setApiUrl() {
                 }
 
                 // Add event indicator (both modes)
-                if (events && events.length > 0) {
-                    const eventIndicator = document.createElement('div');
-                    eventIndicator.className = 'event-title-indicator';
-                    eventIndicator.textContent = events[0].title;
-                    if (events.length > 1) {
-                        eventIndicator.textContent += ` +${events.length - 1}`;
-                    }
-                    dayElement.appendChild(eventIndicator);
+                // Add event indicators (both modes) 
+        if (events && events.length > 0) {
+            const maxEventsToShow = 3; // You can adjust this number
+            events.slice(0, maxEventsToShow).forEach(event => {
+                const eventIndicator = document.createElement('div');
+                eventIndicator.className = 'event-title-indicator';
+                eventIndicator.textContent = event.title;
+                dayElement.appendChild(eventIndicator);
+            });
+            
+            // Still show +X if there are more events than we display
+            if (events.length > maxEventsToShow) {
+                const moreIndicator = document.createElement('div');
+                moreIndicator.className = 'event-title-indicator';
+                moreIndicator.textContent = `+${events.length - maxEventsToShow} more`;
+                moreIndicator.style.fontStyle = 'italic';
+                moreIndicator.style.opacity = '0.8';
+                dayElement.appendChild(moreIndicator);
+            }
                 }
             }
 
@@ -4008,10 +4050,9 @@ function showGoogleSheetsInstructions() {
                 links.forEach(link => {
                     html += `
                         <div class="staff-link-card">
-                            <div class="staff-link-info">
-                                <h3>${link.title}</h3>
-                                <a href="${link.url}" target="_blank">${link.url}</a>
-                            </div>
+                            <button class="staff-link-button" onclick="window.open('${link.url}', '_blank')">
+                                ${link.title}
+                            </button>
                             ${app.state.adminMode ? `
                                 <div class="staff-link-actions">
                                     <button class="btn btn-sm btn-edit" onclick="editStaffLink(${link.id})">Edit</button>
