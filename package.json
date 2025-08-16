@@ -4,7 +4,7 @@
   "description": "WLWV Life Calendar - Cloudflare Workers Deployment",
   "main": "src/index.js",
   "scripts": {
-    "build": "mkdir -p dist && cp index.html dist/",
+    "build": "mkdir -p dist && cp index.html dist/ && cp student_calendar.html dist/",
     "dev": "npm run build && wrangler dev",
     "dev:remote": "npm run build && wrangler dev --remote",
     "preview": "npm run build && wrangler dev --remote --env dev",

@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WLWV Student Calendar</title>
+    <meta name="description" content="West Linn-Wilsonville School District Student Calendar - View schedules and events for WLHS and WVHS">
+    <meta name="keywords" content="WLWV, West Linn, Wilsonville, school calendar, events, student schedule">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #c41e3a 0%, #8b1a2b 100%);
+            min-height: 100vh;
+            color: #1a1a1a;
+        }
+
+        /* Default district theme (red) for home page */
+        body.district-theme {
+            background: linear-gradient(135deg, #c41e3a 0%, #8b1a2b 100%);
+        }
+
+        /* School-specific themes */
+        body.school-wlhs {
+            background: linear-gradient(135deg, #0f4a2b 0%, #1f6b47 100%);
+        }
+
+        body.school-wvhs {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .screen {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #c41e3a;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #a01729;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .home-page {
+            padding: 40px;
+            text-align: center;
+        }
+
+        .home-header h1 {
+            font-size: 3rem;
+            background: linear-gradient(135deg, #c41e3a 0%, #8b1a2b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .schools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 40px;
+            margin: 50px auto;
+            max-width: 800px;
+        }
+
+        .school-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 3px solid transparent;
+        }
+
+        .school-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+            border-color: #c41e3a;
+        }
+
+        .school-logo {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #c41e3a 0%, #8b1a2b 100%);
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: white;
+            font-weight: bold;
+        }
+
+        .school-logo.wlhs {
+            background: linear-gradient(135deg, #0f4a2b 0%, #1f6b47 100%);
+        }
+
+        .school-logo.wvhs {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        }
+
+        .school-card h2 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            color: #1f2937;
+        }
+
+        .school-card p {
+            color: #6b7280;
+            font-size: 1.1rem;
+        }
+
+        /* Calendar Styles */
+        .calendar-container {
+            padding: 30px;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f9fafb 0%, #e5e7eb 100%);
+            border-radius: 15px;
+        }
+
+        .calendar-nav {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .nav-btn {
+            background: #c41e3a;
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: #a01729;
+            transform: scale(1.1);
+        }
+
+        .month-year {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1f2937;
+            min-width: 200px;
+            text-align: center;
+        }
+
+        .school-selector {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .school-select {
+            padding: 10px 15px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            background: white;
+            cursor: pointer;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .calendar-header-day {
+            background: #374151;
+            color: white;
+            text-align: center;
+            padding: 15px 0;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .calendar-day {
+            background: white;
+            min-height: 120px;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .calendar-day:hover {
+            background: #f9fafb;
+        }
+
+        .calendar-day.other-month {
+            background: #f9fafb;
+            color: #9ca3af;
+        }
+
+        .calendar-day.today {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+        }
+
+        .day-number {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 1rem;
+        }
+
+        .ab-badge {
+            background: #3b82f6;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: inline-block;
+        }
+
+        .ab-badge.schedule-a {
+            background: #10b981;
+        }
+
+        .ab-badge.schedule-b {
+            background: #f59e0b;
+        }
+
+        .day-events {
+            font-size: 0.75rem;
+        }
+
+        .event-dot {
+            width: 6px;
+            height: 6px;
+            background: #c41e3a;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 4px;
+            margin-bottom: 2px;
+        }
+
+        .event-text {
+            color: #374151;
+            line-height: 1.2;
+        }
+
+        .day-type-early-release {
+            background: linear-gradient(45deg, #fef3c7 0%, #fed7aa 100%);
+        }
+
+        .day-type-late-start {
+            background: linear-gradient(45deg, #dbeafe 0%, #bfdbfe 100%);
+        }
+
+        .day-type-no-school {
+            background: linear-gradient(45deg, #fee2e2 0%, #fecaca 100%);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+        }
+
+        .modal-header {
+            padding: 25px;
+            background: #c41e3a;
+            color: white;
+            position: relative;
+        }
+
+        .modal-header.school-wlhs {
+            background: #0f4a2b;
+        }
+
+        .modal-header.school-wvhs {
+            background: #1e3a8a;
+        }
+
+        .modal-date {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .modal-ab-schedule {
+            display: none;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.8rem;
+            cursor: pointer;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .close-modal:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .modal-section {
+            margin-bottom: 25px;
+        }
+
+        .section-header {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-content {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .event-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #c41e3a;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .event-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 5px;
+        }
+
+        .event-details {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        /* Department color coding */
+        .dept-athletics { border-left-color: #10b981; }
+        .dept-fine-arts { border-left-color: #8b5cf6; }
+        .dept-academics { border-left-color: #3b82f6; }
+        .dept-student-life { border-left-color: #f59e0b; }
+        .dept-general { border-left-color: #6b7280; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6b7280;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            opacity: 0.3;
+        }
+
+        /* Status and Loading */
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            z-index: 2000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            background: #ef4444;
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 3000;
+            backdrop-filter: blur(3px);
+        }
+
+        .loading-spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e5e7eb;
+            border-top: 4px solid #c41e3a;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        body.loading .loading-overlay {
+            display: block;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .schools-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                margin: 30px auto;
+            }
+
+            .school-card {
+                padding: 30px 20px;
+            }
+
+            .calendar-header {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+
+            .month-year {
+                font-size: 1.5rem;
+                min-width: auto;
+            }
+
+            .calendar-day {
+                min-height: 80px;
+                padding: 5px;
+            }
+
+            .day-events {
+                font-size: 0.7rem;
+            }
+
+            .modal-content {
+                width: 95%;
+                max-height: 90vh;
+            }
+
+            .modal-header,
+            .modal-body {
+                padding: 20px;
+            }
+
+            .status-bar {
+                font-size: 0.8rem;
+                padding: 8px 15px;
+            }
+        }
+    </style>
+</head>
+<body class="district-theme">
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📅 WLWV Student Calendar</h1>
+            <p>View school events and schedules</p>
+        </div>
+
+        <!-- Home Screen -->
+        <div id="home" class="screen active">
+            <div class="home-page">
+                <div class="home-header">
+                    <h1>Select Your School</h1>
+                    <p>Choose your school to view the calendar and upcoming events</p>
+                </div>
+                
+                <div class="schools-grid">
+                    <div class="school-card" onclick="openSchool('wlhs')">
+                        <div class="school-logo wlhs">🏫</div>
+                        <h2>West Linn High School</h2>
+                        <p>View WLHS calendar and events</p>
+                    </div>
+                    
+                    <div class="school-card" onclick="openSchool('wvhs')">
+                        <div class="school-logo wvhs">🏫</div>
+                        <h2>Wilsonville High School</h2>
+                        <p>View WVHS calendar and events</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendar Screen -->
+        <div id="calendar" class="screen">
+            <div class="calendar-container">
+                <div class="calendar-header">
+                    <div class="calendar-nav">
+                        <button class="nav-btn" onclick="previousMonth()">‹</button>
+                        <div class="month-year" id="monthYear">January 2024</div>
+                        <button class="nav-btn" onclick="nextMonth()">›</button>
+                    </div>
+                    
+                    <div class="school-selector">
+                        <label for="schoolSelect"><strong>School:</strong></label>
+                        <select id="schoolSelect" class="school-select" onchange="changeSchool()">
+                            <option value="wlhs">West Linn HS</option>
+                            <option value="wvhs">Wilsonville HS</option>
+                        </select>
+                        <button class="btn btn-secondary" onclick="goHome()">← Back to Home</button>
+                    </div>
+                </div>
+                
+                <div class="calendar-grid" id="calendarGrid">
+                    <!-- Calendar will be rendered here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Day Modal -->
+    <div id="dayModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header" id="modalHeader">
+                <div class="modal-date" id="modalDate">Monday, January 1, 2024</div>
+                <div class="modal-ab-schedule ab-badge" id="modalABSchedule">A Day</div>
+                <button class="close-modal" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Modal content will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <div>Loading calendar data...</div>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-item">
+            <span>📡 Status:</span>
+            <span id="connectionStatus">Connected</span>
+        </div>
+        <div class="status-item">
+            <span>🏫 School:</span>
+            <span id="currentSchool">Select a school</span>
+        </div>
+        <div class="status-item">
+            <span>📅 Today:</span>
+            <span id="todayDate"></span>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification"></div>
+
+    <script>
+        // Application state
+        const app = {
+            state: {
+                currentScreen: 'home',
+                selectedSchool: null,
+                currentDate: new Date(),
+                connected: false,
+                loading: false
+            }
+        };
+
+        // API configuration
+        const API_BASE = window.location.origin + '/api';
+
+        // Cache for calendar data
+        const calendarCache = {
+            events: {},
+            schedules: {},
+            dayTypes: {},
+            lastFetch: {}
+        };
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        async function initializeApp() {
+            updateTodayDate();
+            await checkConnection();
+            
+            // Set initial state
+            app.state.currentScreen = 'home';
+            showScreen('home');
+            updateStatus();
+        }
+
+        // API helper
+        async function apiCall(endpoint, options = {}) {
+            try {
+                const response = await fetch(API_BASE + endpoint, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        ...options.headers
+                    }
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(error || `HTTP ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error(`API call failed for ${endpoint}:`, error);
+                showNotification(`Error: ${error.message}`, true);
+                throw error;
+            }
+        }
+
+        // Connection check
+        async function checkConnection() {
+            try {
+                await apiCall('/status');
+                app.state.connected = true;
+                showNotification('Connected to calendar system');
+            } catch (error) {
+                app.state.connected = false;
+                showNotification('Failed to connect to calendar system', true);
+            }
+            updateStatus();
+        }
+
+        // Navigation functions
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+            app.state.currentScreen = screenId;
+            
+            // Update body class for theme
+            document.body.className = 'district-theme';
+            if (screenId === 'calendar' && app.state.selectedSchool) {
+                document.body.className = `school-${app.state.selectedSchool}`;
+            }
+        }
+
+        function openSchool(school) {
+            app.state.selectedSchool = school;
+            showScreen('calendar');
+            updateStatus();
+            fetchCalendarData();
+            renderCalendar();
+        }
+
+        function goHome() {
+            app.state.selectedSchool = null;
+            showScreen('home');
+            updateStatus();
+        }
+
+        function changeSchool() {
+            const select = document.getElementById('schoolSelect');
+            app.state.selectedSchool = select.value;
+            updateStatus();
+            fetchCalendarData();
+            renderCalendar();
+        }
+
+        // Calendar navigation
+        function previousMonth() {
+            app.state.currentDate.setMonth(app.state.currentDate.getMonth() - 1);
+            fetchCalendarData();
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            app.state.currentDate.setMonth(app.state.currentDate.getMonth() + 1);
+            fetchCalendarData();
+            renderCalendar();
+        }
+
+        // Calendar data fetching
+        async function fetchCalendarData(forceRefresh = false) {
+            if (!app.state.connected || !app.state.selectedSchool) return false;
+            
+            const school = app.state.selectedSchool;
+            const cacheKey = `${school}-${app.state.currentDate.getFullYear()}-${app.state.currentDate.getMonth()}`;
+            
+            // Use cache if available and not stale (5 minutes)
+            if (!forceRefresh && !isCacheStale(cacheKey)) {
+                return true;
+            }
+            
+            try {
+                setLoading(true);
+                showNotification('Loading calendar data...');
+                
+                // Fetch events, schedules, and day types in parallel
+                const [events, schedules, dayTypes] = await Promise.all([
+                    apiCall(`/events?school=${school}`),
+                    apiCall('/day-schedules'),
+                    apiCall('/day-types')
+                ]);
+                
+                // Store in cache organized by date
+                calendarCache.events[school] = groupByDate(events);
+                calendarCache.schedules = arrayToDateMap(schedules);
+                calendarCache.dayTypes = arrayToDateMap(dayTypes);
+                calendarCache.lastFetch[cacheKey] = Date.now();
+                
+                showNotification('Calendar data loaded!');
+                return true;
+            } catch (error) {
+                console.error('Failed to fetch calendar data:', error);
+                showNotification('Failed to load calendar data', true);
+                return false;
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Helper functions
+        function isCacheStale(cacheKey) {
+            const lastFetch = calendarCache.lastFetch[cacheKey];
+            if (!lastFetch) return true;
+            const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+            return lastFetch < fiveMinutesAgo;
+        }
+
+        function groupByDate(items) {
+            return items.reduce((acc, item) => {
+                const date = item.date;
+                if (!acc[date]) acc[date] = [];
+                acc[date].push(item);
+                return acc;
+            }, {});
+        }
+
+        function arrayToDateMap(items) {
+            return items.reduce((acc, item) => {
+                acc[item.date] = item;
+                return acc;
+            }, {});
+        }
+
+        // Calendar rendering
+        function renderCalendar() {
+            if (!app.state.selectedSchool) return;
+            
+            const grid = document.getElementById('calendarGrid');
+            const monthYear = document.getElementById('monthYear');
+            const schoolSelect = document.getElementById('schoolSelect');
+            
+            // Update month/year display
+            monthYear.textContent = app.state.currentDate.toLocaleDateString('en-US', { 
+                month: 'long', 
+                year: 'numeric' 
+            });
+            
+            // Update school selector
+            schoolSelect.value = app.state.selectedSchool;
+            
+            // Clear grid
+            grid.innerHTML = '';
+            
+            // Create header row
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            days.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'calendar-header-day';
+                header.textContent = day;
+                grid.appendChild(header);
+            });
+            
+            // Calculate calendar days
+            const year = app.state.currentDate.getFullYear();
+            const month = app.state.currentDate.getMonth();
+            const firstDay = new Date(year, month, 1);
+            const startDate = new Date(firstDay);
+            startDate.setDate(startDate.getDate() - firstDay.getDay());
+            
+            // Create calendar days
+            for (let i = 0; i < 42; i++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + i);
+                const dateStr = currentDate.toISOString().split('T')[0];
+                
+                const dayElement = createDayElement(currentDate, dateStr);
+                grid.appendChild(dayElement);
+            }
+        }
+
+        function createDayElement(date, dateStr) {
+            const dayElement = document.createElement('div');
+            dayElement.className = 'calendar-day';
+            dayElement.dataset.date = dateStr;
+            dayElement.onclick = () => handleDayClick(dateStr);
+            
+            // Check if this day is in the current month
+            const isCurrentMonth = date.getMonth() === app.state.currentDate.getMonth();
+            if (!isCurrentMonth) {
+                dayElement.classList.add('other-month');
+            }
+            
+            // Check if today
+            const isToday = date.toDateString() === new Date().toDateString();
+            if (isToday) dayElement.classList.add('today');
+            
+            // Add day type class for background tinting
+            const dayType = calendarCache.dayTypes[dateStr];
+            if (dayType && isCurrentMonth) {
+                const typeClass = dayType.type.toLowerCase().replace(/\s+/g, '-');
+                dayElement.classList.add(`day-type-${typeClass}`);
+            }
+            
+            // Add day number
+            const dayNumber = document.createElement('div');
+            dayNumber.className = 'day-number';
+            dayNumber.textContent = date.getDate();
+            dayElement.appendChild(dayNumber);
+            
+            // Only add data elements if it's the current month
+            if (isCurrentMonth) {
+                const school = app.state.selectedSchool;
+                const schedule = calendarCache.schedules[dateStr];
+                const events = calendarCache.events[school]?.[dateStr] || [];
+                
+                // Add A/B schedule indicator
+                if (schedule) {
+                    const abBadge = document.createElement('div');
+                    abBadge.className = `ab-badge schedule-${schedule.schedule.toLowerCase()}`;
+                    abBadge.textContent = schedule.schedule;
+                    dayElement.appendChild(abBadge);
+                }
+                
+                // Add events
+                if (events.length > 0) {
+                    const eventsContainer = document.createElement('div');
+                    eventsContainer.className = 'day-events';
+                    
+                    events.slice(0, 3).forEach(event => {
+                        const eventElement = document.createElement('div');
+                        eventElement.innerHTML = `
+                            <span class="event-dot"></span>
+                            <span class="event-text">${event.title}</span>
+                        `;
+                        eventsContainer.appendChild(eventElement);
+                    });
+                    
+                    if (events.length > 3) {
+                        const moreElement = document.createElement('div');
+                        moreElement.innerHTML = `<span class="event-text">+${events.length - 3} more</span>`;
+                        eventsContainer.appendChild(moreElement);
+                    }
+                    
+                    dayElement.appendChild(eventsContainer);
+                }
+            }
+            
+            return dayElement;
+        }
+
+        // Modal functions
+        function handleDayClick(dateStr) {
+            const dateObj = new Date(dateStr + 'T00:00:00');
+            const formattedDate = dateObj.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            openModal(dateStr, formattedDate);
+        }
+
+        function openModal(dateStr, formattedDate) {
+            const modal = document.getElementById('dayModal');
+            const modalDate = document.getElementById('modalDate');
+            const modalHeader = document.getElementById('modalHeader');
+            const modalBody = document.getElementById('modalBody');
+            const modalABSchedule = document.getElementById('modalABSchedule');
+            
+            // Set header
+            modalDate.textContent = formattedDate;
+            modalHeader.className = `modal-header school-${app.state.selectedSchool}`;
+            
+            // Show A/B schedule if exists
+            const schedule = calendarCache.schedules[dateStr];
+            if (schedule) {
+                modalABSchedule.textContent = schedule.schedule;
+                modalABSchedule.className = `ab-badge schedule-${schedule.schedule.toLowerCase()}`;
+                modalABSchedule.style.display = 'block';
+            } else {
+                modalABSchedule.style.display = 'none';
+            }
+            
+            // Build modal content
+            const school = app.state.selectedSchool;
+            const events = calendarCache.events[school]?.[dateStr] || [];
+            const dayType = calendarCache.dayTypes[dateStr];
+            
+            let content = '';
+            
+            // Day type notification
+            if (dayType) {
+                content += `
+                    <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px; margin-bottom: 20px; color: #92400e;">
+                        <strong>Special Schedule:</strong> ${dayType.type}
+                    </div>
+                `;
+            }
+            
+            // Events section
+            content += `
+                <div class="modal-section">
+                    <div class="section-header">
+                        📅 Today's Events
+                    </div>
+                    <div class="section-content" style="padding: 0;">
+            `;
+            
+            if (events.length > 0) {
+                events.forEach(event => {
+                    const timeStr = event.time ? new Date('2000-01-01T' + event.time).toLocaleTimeString('en-US', { 
+                        hour: 'numeric', 
+                        minute: '2-digit' 
+                    }) : '';
+                    
+                    // Determine department class for color coding
+                    let deptClass = 'dept-general';
+                    if (event.department) {
+                        const deptKey = event.department.toLowerCase().replace(/[\/\s]+/g, '-');
+                        deptClass = `dept-${deptKey}`;
+                    }
+                    
+                    content += `
+                        <div class="event-card ${deptClass}">
+                            <div class="event-title">${event.title}</div>
+                            <div class="event-details">
+                                ${timeStr}
+                                ${event.department ? ' • ' + event.department : ''}
+                                ${event.description ? '<br>' + event.description : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                content += `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📅</div>
+                        <p>No events scheduled for this day</p>
+                    </div>
+                `;
+            }
+            
+            content += `
+                    </div>
+                </div>
+            `;
+            
+            modalBody.innerHTML = content;
+            modal.classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('dayModal').classList.remove('show');
+        }
+
+        // Utility functions
+        function updateTodayDate() {
+            const today = new Date().toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+            document.getElementById('todayDate').textContent = today;
+        }
+
+        function updateStatus() {
+            const connectionStatus = document.getElementById('connectionStatus');
+            const currentSchool = document.getElementById('currentSchool');
+            
+            const connected = app.state.connected;
+            const message = connected ? 'Connected' : 'Disconnected';
+            
+            connectionStatus.className = `status-${connected ? 'connected' : 'disconnected'}`;
+            connectionStatus.innerHTML = `
+                <span>${connected ? '🟢' : '🔴'}</span>
+                <span>${message}</span>
+            `;
+            
+            if (app.state.selectedSchool) {
+                const schoolName = app.state.selectedSchool === 'wlhs' ? 'West Linn HS' : 'Wilsonville HS';
+                currentSchool.textContent = schoolName;
+            } else {
+                currentSchool.textContent = 'Select a school';
+            }
+        }
+
+        function setLoading(loading) {
+            app.state.loading = loading;
+            document.body.classList.toggle('loading', loading);
+        }
+
+        function showNotification(message, isError = false) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = isError ? 'notification error' : 'notification';
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('dayModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
