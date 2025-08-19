@@ -343,11 +343,12 @@
 
         .calendar-grid {
             display: grid;
-            grid-template-columns: repeat(7, 1fr);
+            grid-template-columns: repeat(7, minmax(0, 1fr));
             gap: 2px;
             background: #94a3b8;
             margin: 1px;
-            flex: 1;
+            flex: none;
+            height: auto;
             position: relative;
             z-index: 1;
             padding-bottom: 200px; /* Add space for dropdowns */
@@ -435,7 +436,7 @@
             max-width: calc(100% - 15px);
             box-sizing: border-box;
             align-self: flex-start; /* Start from same position */
-            width: fit-content; /* Only as wide as content */
+            width: auto; /* Only as wide as content */
         }
 
        /* .event-title-indicator:last-child {
@@ -485,6 +486,7 @@
         /* Admin Calendar Controls */
         .calendar-day.admin-mode {
             position: relative;
+            overflow: visible;
         }
 
         /* Show controls when in admin mode */
@@ -620,23 +622,23 @@
             border: 1px solid #e5e7eb;
             border-radius: 8px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-            padding: 8px;
+            padding: 4px;
             display: none;
-            z-index: 1000;
-            min-width: 180px;
-            max-height: 300px;
-            overflow-y: auto;
+            z-index: 1500 !important;
+            min-width: 150px;
+            overflow-y: visible !important;
         }
 
         .day-type-dropdown.show {
             display: block;
+            overflow-y: visible !important;
         }
 
         .day-type-option {
             padding: 8px 12px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 0.8rem;
+            font-size: 0.6rem;
             font-weight: 600;
             transition: all 0.1s ease;
             white-space: nowrap;
@@ -1623,6 +1625,114 @@
             }
         }
 
+            .wvhs-header {
+            display: none; /* Hidden by default */
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 16px 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .wvhs-quick-links {
+            display: none; /* Hidden by default */
+            position: relative; /* Important for dropdown positioning */
+        }
+
+        /* Only show when WVHS is selected */
+        body.school-wvhs .wvhs-quick-links {
+            display: inline-block;
+        }
+
+        .quick-links-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .quick-links-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .quick-links-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* IMPORTANT: Make sure dropdown is hidden by default */
+        .quick-links-content {
+            display: none !important; /* Force hidden */
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            min-width: 220px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            border-radius: 12px;
+            padding: 8px 0;
+            z-index: 1000;
+            margin-top: 5px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        /* Only show when dropdown has 'show' class */
+        .quick-links-dropdown.show .quick-links-content {
+            display: block !important;
+        }
+
+        .quick-links-content a {
+            display: block;
+            padding: 10px 16px;
+            color: #1e3a8a;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .quick-links-content a:hover {
+            background: #f1f5f9;
+            color: #1e40af;
+        }
+
+        .quick-links-content a:first-child {
+            border-radius: 12px 12px 0 0;
+        }
+
+        .quick-links-content a:last-child {
+            border-radius: 0 0 12px 12px;
+        }
+
+        /* Responsive - stack on mobile */
+        @media (max-width: 768px) {
+            .calendar-header > div:first-child > span {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+            }
+            
+            .wvhs-quick-links {
+                margin-left: 0;
+            }
+            
+            .quick-links-content {
+                right: 0;
+                left: auto;
+                min-width: 200px;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -1709,19 +1819,29 @@
         <div class="screen" id="calendar">
             <div class="calendar-page">
                 <div class="calendar-header">
-                    <div>
+                    <div style="display: flex; align-items: center; gap: 20px;">
                         <button class="nav-btn" onclick="showScreen('home')">🏠 Home</button>
-                        <span style="margin-left: 20px; font-size: 1.7rem; font-weight: 700;">
+                        <span style="font-size: 1.7rem; font-weight: 700;">
                             <span id="schoolIcon">🦁</span> <span id="schoolName">West Linn High School</span>
                         </span>
+                        <div class="wvhs-quick-links">
+                            <div class="quick-links-dropdown" id="quickLinksDropdown">
+                                <button class="quick-links-btn" onclick="toggleQuickLinks(event)">
+                                    📚 Quick Links ▼
+                                </button>
+                                <div class="quick-links-content">
+                                    <a href="https://sites.google.com/wlwv.k12.or.us/wilsonville-hs/home" target="_blank"> Updates + Photos</a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="calendar-controls">
                         <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
                         <div class="current-month" id="currentMonth">August 2025</div>
                         <button class="nav-btn" onclick="changeMonth(1)">›</button>
                         <select id="schoolSelect" onchange="changeSchool()">
-                            <option value="wlhs">🦁 West Linn HS</option>
-                            <option value="wvhs">🐱 Wilsonville HS</option>
+                            <option value="wlhs"> West Linn HS</option>
+                            <option value="wvhs"> Wilsonville HS</option>
                         </select>
                         <div class="nav-dropdown">
                             <button class="nav-dropdown-btn" id="navDropdownBtn">Menu ▼</button>
@@ -1734,7 +1854,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="calendar-grid" id="calendarGrid">
                     <!-- Calendar will be generated here -->
                 </div>
@@ -4568,7 +4687,19 @@ function renderEventsPreview(results) {
                 showNotification('Failed to undo events import: ' + error.message, true);
             }
         }
+                function toggleQuickLinks(event) {
+                event.stopPropagation();
+                const dropdown = document.getElementById('quickLinksDropdown');
+                dropdown.classList.toggle('show');
+        }
 
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(event) {
+                const dropdown = document.getElementById('quickLinksDropdown');
+                if (!event.target.closest('.quick-links-dropdown')) {
+                dropdown.classList.remove('show');
+            }
+        });
             // Make functions globally accessible
             window.loadStaffLinks = loadStaffLinks;
             window.addStaffLink = addStaffLink;
