@@ -1741,12 +1741,6 @@
             <h1> West Linn Wilsonville SD (25-26) </h1>
         </div>
 
-        <div class="tabs">
-            <button class="tab active" onclick="showScreen('home')">🏠 Home</button>
-
-            <button class="tab" onclick="showScreen('calendar')">📅 Calendar</button>
-            <button class="tab" onclick="showScreen('admin')">⚙️ Admin</button>
-        </div>
 
         <!-- Home Screen -->
         <div class="screen active" id="home">
@@ -3554,6 +3548,94 @@ async function updateEvent(e, eventId, eventDate) {
 
         // Initialize Application
         async function initializeApp() {
+            // STUDENT MODE DETECTION - Add this at the very beginning
+            const urlParams = new URLSearchParams(window.location.search);
+            const isStudentMode = urlParams.get('studentMode') === 'true';
+            const studentSchool = urlParams.get('school');
+            const originalUrl = urlParams.get('originalUrl');
+            
+            if (isStudentMode && studentSchool) {
+                console.log('Student mode detected for:', studentSchool);
+                if (originalUrl) {
+                history.replaceState({}, '', originalUrl);
+                console.log('URL cleaned up to:', originalUrl);
+        
+            }
+                // Set up student mode
+                window.STUDENT_MODE = true;
+                window.STUDENT_SCHOOL = studentSchool;
+                app.state.selectedSchool = studentSchool;
+                app.state.adminMode = false;
+                
+                // Add CSS to hide admin elements
+                const style = document.createElement('style');
+                style.textContent = `
+                    /* Hide admin-only elements for students */
+                    .nav-dropdown { display: none !important; }
+                    #adminLoginLink, #adminPanelLink, #adminLogoutLink { display: none !important; }
+                    #schoolSelect { display: none !important; }
+                    .tabs { display: none !important; }
+                    #staff-links { display: none !important; }
+                    
+                    /* Hide home screen and show calendar directly */
+                    .screen#home { display: none !important; }
+                    .screen#calendar { display: block !important; }
+                `;
+                document.head.appendChild(style);
+                
+                setTimeout(() => {
+                const schoolIcon = document.getElementById('schoolIcon');
+                const schoolName = document.getElementById('schoolName');
+                
+                if (schoolIcon && schoolName) {
+                    if (studentSchool === 'wlhs') {
+                        schoolIcon.innerHTML = '<img src="https://pbs.twimg.com/profile_images/1894895031833726976/9f9O-2DF_400x400.jpg" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">';
+                        schoolName.textContent = 'West Linn High School';
+                    } else {
+                        schoolIcon.innerHTML = '<img src="wildcat.png" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">';
+                        schoolName.textContent = 'Wilsonville High School';
+                    }
+                }
+            }, 200);
+                // Add student mode classes
+                document.body.classList.add('student-mode');
+                document.body.classList.add(`school-${studentSchool}`);
+                
+                // Force show calendar screen
+                setTimeout(() => {
+                    const homeScreen = document.getElementById('home');
+                    const calendarScreen = document.getElementById('calendar');
+                    
+                    if (homeScreen) homeScreen.classList.remove('active');
+                    if (calendarScreen) calendarScreen.classList.add('active');
+                    
+                    console.log('Student mode: forced calendar view');
+                }, 100);
+                
+                // Override modal function to remove materials
+                setTimeout(() => {
+                    if (window.openUserModal) {
+                        const originalModal = window.openUserModal;
+                        window.openUserModal = function(dateStr, formattedDate) {
+                            originalModal(dateStr, formattedDate);
+                            setTimeout(() => {
+                                const modal = document.getElementById('dayModal');
+                                if (modal) {
+                                    const sections = modal.querySelectorAll('.modal-section');
+                                    sections.forEach(section => {
+                                        const header = section.querySelector('.section-header');
+                                        if (header && header.textContent.includes('Materials')) {
+                                            section.remove();
+                                            console.log('Removed materials section for student mode');
+                                        }
+                                    });
+                                }
+                            }, 10);
+                        };
+                    }
+                }, 500);
+            }
+            
             setApiUrl();
             
             // Apply district theme initially

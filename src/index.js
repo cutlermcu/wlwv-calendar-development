@@ -48,6 +48,87 @@ function corsResponse(response = null, status = 200) {
     return new Response(null, { status, headers });
 }
 
+// Function to serve student-specific HTML - Redirect approach
+async function serveStudentCalendar(school, env, request) {
+    try {
+        const schoolName = school === 'wlhs' ? 'West Linn High School' : 'Wilsonville High School';
+        const schoolMascot = school === 'wlhs' ? 'Lions' : 'Wildcats';
+        const themeGradient = school === 'wlhs' 
+            ? 'linear-gradient(135deg, #0f4a2b 0%, #1f6b47 100%)'
+            : 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)';
+        
+        const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WLWV ${schoolMascot} Student Calendar</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: ${themeGradient};
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            padding: 40px;
+        }
+        h1 { font-size: 2.5rem; margin-bottom: 20px; }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .status { font-size: 1.2rem; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WLWV ${schoolMascot} Student Life Class Calendar</h1>
+        <div class="spinner"></div>
+        <div class="status">Loading ${schoolName} calendar...</div>
+        <div class="status" style="font-size: 1rem; opacity: 0.8;">Redirecting to student view</div>
+    </div>
+    
+    <script>
+        console.log('Redirecting to student life class calendar for ${school}');
+        
+        // Redirect to main calendar with student parameters
+        setTimeout(function() {
+            window.location.href = '/?studentMode=true&school=${school}&view=calendar&originalUrl=' + encodeURIComponent('/${school === 'wlhs' ? 'lions' : 'wildcats'}');
+        }, 1500);
+    </script>
+</body>
+</html>`;
+        
+        return new Response(html, {
+            headers: {
+                'Content-Type': 'text/html',
+                ...corsHeaders()
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error serving student calendar:', error);
+        return new Response(`Error: ${error.message}`, { status: 500 });
+    }
+}
+
 export default {
     async fetch(request, env, ctx) {
         // Handle CORS preflight requests
@@ -56,9 +137,24 @@ export default {
         }
 
         const url = new URL(request.url);
+        const pathname = url.pathname;
+        
+        // Handle favicon requests
+        if (pathname === '/favicon.ico') {
+            return new Response(null, { status: 204 });
+        }
+        
+        // STUDENT CALENDAR ROUTES
+        if (pathname === '/lions') {
+            return serveStudentCalendar('wlhs', env, request);
+        }
+        
+        if (pathname === '/wildcats') {
+            return serveStudentCalendar('wvhs', env, request);
+        }
         
         // API routes
-        if (url.pathname.startsWith('/api/')) {
+        if (pathname.startsWith('/api/')) {
             return handleApiRequest(request, env, url);
         }
         

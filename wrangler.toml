@@ -5,7 +5,7 @@ compatibility_date = "2025-08-08"
 # Assets configuration for serving frontend
 [assets]
 directory = "./dist"
-not_found_handling = "single-page-application"
+# REMOVE THIS LINE: not_found_handling = "single-page-application"
 
 # Default environment variables (for local development)
 [vars]
